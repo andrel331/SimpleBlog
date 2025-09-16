@@ -35,3 +35,9 @@ async def artigos(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
         "public/artigos.html", {"request": request},
     )
+
+@router.get("/artigo", response_class=HTMLResponse)
+async def artigo(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(
+        "public/artigo.html", {"request": request},
+    )

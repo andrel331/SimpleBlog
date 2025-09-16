@@ -1,20 +1,25 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SimpleBlog</title>
 </head>
+
 <body>
     <h1>SimpleBlog</h1>
     <hr>
-    <p><a href="/">Principal</a></p>
-    <p><a href="/login">Entrar</a></p>
-    <p><a href="/cadastro">Cadastrar</a></p>
-    <p><a href="/sobre">Sobre</a></p>
-    <p><a href="/artigos">Artigos</a></p>
+    <ul>
+        <li><a href="/">Principal</a></li>
+        <li><a href="/login">Entrar</a></li>
+        <li><a href="/cadastro">Cadastrar</a></li>
+        <li><a href="/sobre">Sobre</a></li>
+        <li><a href="/artigos">Artigos</a></li>
+    </ul>
     <hr>
     {% block conteudo %}
     {% endblock %}
 </body>
+
 </html>
