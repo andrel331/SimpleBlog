@@ -1,0 +1,34 @@
+@import url('https://fonts.googleapis.com/css2?family=Intel+One+Mono:ital,wght@0,300..700;1,300..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+:root{
+--color-principal:#007680;
+--color-principal-100:#c7fbff;
+--color-principal-200:#3ab7b4;
+--color-principal-300:#1eb6c3;
+--color-principal-400:#0b939f;
+--color-principal-500:#005e66;
+--color-principal-600:#00383e;;
+--color-principal-700:#002529;
+--color-principal-800:#001314;
+--color-principal-base:white;
+--font-principal:"Intel One Mono", monospace;
+--font-secundaria:"Inter", sans-serif;
+}
+
+label,input{
+font-family: var(--font-secundaria);
+
+
+
+}
+body{
+background-color: var(--color-principal-base);
+
+
+
+}
+.bg-SimpleBlog{
+background-color: var(--color-principal-300)!important;
+
+
+
+}
