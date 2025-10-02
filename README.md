@@ -1,3 +1,3 @@
 # SimpleBlog
 
-André Luiz 2
+SimpleBlog
