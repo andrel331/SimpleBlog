@@ -1,4 +1,43 @@
 {% extends "base.html" %}
 {% block conteudo %}
-<h2>Sobre</h2>
+<div class="row gy-4">
+<div class="col-12">
+<div class="card p-4">
+<div class="d-flex justify-content-between align-items-start">
+<div>
+<h2 class="mb-1">Sobre o SimpleBlog</h2>
+<p class="lead">Uma solução open-source, leve e focada em privacidade para quem precisa de um blog profissional sem complexidade.</p>
+</div>
+</div>
+
+
+<hr>
+
+
+<div class="row">
+<div class="col-md-6">
+<h5>Visão & Missão</h5>
+<p class="text-muted">Tornar a publicação na web acessível, responsável e segura. Simples, auditável e adaptável para equipes e indivíduos.</p>
+
+
+<h5>Para desenvolvedores</h5>
+<p class="text-muted">Código modular, documentação clara e facilidade para contribuições. Estruture temas e plugins com padrões bem definidos.</p>
+</div>
+<div class="col-md-6">
+<h5>Roadmap</h5>
+<ul class="text-muted">
+<li>Integração com analytics respeitando a privacidade</li>
+<li>Temas profissionais (light/dark) e editor de conteúdo</li>
+<li>Autenticação robusta e suporte a OAuth</li>
+</ul>
+</div>
+</div>
+
+
+<div class="mt-4 text-end">
+<a href="/artigos" class="btn btn-outline-light btn-sm">Ver artigos</a>
+</div>
+</div>
+</div>
+</div>
 {% endblock %}
