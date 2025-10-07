@@ -1,3 +1,3 @@
 # SimpleBlog
 
-SimpleBlog beta
+SimpleBlog beta2
