@@ -3,180 +3,347 @@
 <canvas id="matrix-bg"></canvas>
 
 <style>
-/* ===== Fundo Matrix ===== */
-body {
-    margin: 0;
-    font-family: 'Courier New', monospace;
-    background: black;
-    color: #00ff00;
-    overflow-x: hidden;
-}
-canvas#matrix-bg {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: -1;
-}
+    /* ===== Fundo Matrix ===== */
+    body {
+        margin: 0;
+        font-family: 'Courier New', monospace;
+        background: black;
+        color: #00ff00;
+        overflow-x: hidden;
+    }
 
-/* ===== Navbar ===== */
-.navbar {
-    background: rgba(0,0,0,0.85)!important;
-    box-shadow: 0 0 15px #00ff00;
-    border-bottom: 2px solid #00ff00;
-}
-.navbar .navbar-brand {
-    font-weight: bold;
-    font-size: 1.3rem;
-    text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00;
-}
-.navbar .nav-link {
-    color: #00ff00 !important;
-    font-weight: 500;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-.navbar .nav-link:hover {
-    color: #7fff7f !important;
-    text-shadow: 0 0 5px #7fff7f, 0 0 15px #00ff00;
-    transform: scale(1.1);
-}
+    canvas#matrix-bg {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: -1;
+    }
 
-/* ===== Container ===== */
-.container {
-    backdrop-filter: blur(6px);
-    background: rgba(0,0,0,0.65);
-    border-radius: 20px;
-    padding: 35px;
-    box-shadow: 0 0 30px rgba(0,255,0,0.6);
-    border: 1px solid rgba(0,255,0,0.5);
-    position: relative;
-    overflow: hidden;
-}
-.container::before {
-    content: "";
-    position: absolute;
-    top: -2px; left: -2px; right: -2px; bottom: -2px;
-    background: linear-gradient(90deg, #00ff00, #00ccff, #9d00ff, #00ff00);
-    background-size: 400% 400%;
-    z-index: -1;
-    border-radius: 20px;
-    filter: blur(8px);
-    animation: neonBorder 10s linear infinite;
-}
-@keyframes neonBorder {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
+    /* ===== Navbar ===== */
+    .navbar {
+        background: rgba(0, 0, 0, 0.85) !important;
+        box-shadow: 0 0 15px #00ff00;
+        border-bottom: 2px solid #00ff00;
+    }
 
-/* ===== Footer ===== */
-footer {
-    background: rgba(0,0,0,0.9);
-    color: #00ff00;
-    position: relative;
-    border-top: 2px solid #00ff00;
-    box-shadow: 0 -5px 15px rgba(0,255,0,0.5);
-}
-footer::before {
-    content: "";
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 3px;
-    background: linear-gradient(90deg, #00ff00, #00ccff, #9d00ff, #00ff00);
-    background-size: 300% 300%;
-    animation: neonBar 6s linear infinite;
-}
-@keyframes neonBar {
-    0% { background-position: 0% 50%; }
-    100% { background-position: 200% 50%; }
-}
-footer a {
-    color: #00ff00;
-    font-size: 1.2rem;
-    margin: 0 8px;
-    transition: 0.3s;
-}
-footer a:hover {
-    color: #7fff7f;
-    text-shadow: 0 0 5px #00ff00, 0 0 15px #00ccff, 0 0 25px #9d00ff;
-}
+    .navbar .navbar-brand {
+        font-weight: bold;
+        font-size: 1.3rem;
+        text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00;
+    }
 
-/* ===== Títulos Hacker ===== */
-h1, h2, h3 {
-    color: #7fff7f;
-    text-shadow: 0 0 10px #00ff00, 0 0 20px #00ccff;
-    overflow: hidden;
-    white-space: nowrap;
-    border-right: 2px solid #00ff00;
-    width: 0;
-    animation: typing 4s steps(40, end) forwards, blink 0.8s infinite;
-}
-@keyframes typing { from { width: 0 } to { width: 100% } }
-@keyframes blink { 50% { border-color: transparent } }
+    .navbar .nav-link {
+        color: #00ff00 !important;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
 
-/* ===== Glitch ===== */
-.glitch {
-    position: relative;
-    display: inline-block;
-    color: #00ff00;
-    font-weight: bold;
-    text-transform: uppercase;
-    text-shadow: 0 0 5px #00ff00, 0 0 15px #00ccff, 0 0 25px #9d00ff;
-    animation: glitchAnim 2s infinite;
-}
-.glitch::before, .glitch::after {
-    content: attr(data-text);
-    position: absolute;
-    left: 0;
-    width: 100%;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-}
-.glitch::before { animation: glitchTop 3s infinite linear alternate-reverse; color: #ff00ff; text-shadow: 2px 2px #00ffea; }
-.glitch::after { animation: glitchBottom 2.5s infinite linear alternate-reverse; color: #00ffea; text-shadow: -2px -2px #ff00ff; }
-@keyframes glitchAnim { 0% { transform: none; } 20% { transform: skew(5deg); } 40% { transform: none; } 60% { transform: skew(-5deg); } 100% { transform: none; } }
-@keyframes glitchTop { 0% { clip: rect(0,9999px,0,0); } 10% { clip: rect(10px,9999px,40px,0);} 20% { clip: rect(85px,9999px,140px,0); } 40% { clip: rect(20px,9999px,80px,0);} 60% { clip: rect(5px,9999px,30px,0);} 100% { clip: rect(0,9999px,0,0); } }
-@keyframes glitchBottom { 0% { clip: rect(0,9999px,0,0); } 15% { clip: rect(60px,9999px,100px,0); } 30% { clip: rect(25px,9999px,60px,0);} 50% { clip: rect(10px,9999px,40px,0);} 80% { clip: rect(40px,9999px,90px,0);} 100% { clip: rect(0,9999px,0,0);} }
+    .navbar .nav-link:hover {
+        color: #7fff7f !important;
+        text-shadow: 0 0 5px #7fff7f, 0 0 15px #00ff00;
+        transform: scale(1.1);
+    }
 
-/* ===== Botões ===== */
-.btn-light, .btn-outline-light {
-    border: 1px solid #00ff00;
-    color: #00ff00;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.4s ease;
-}
-.btn-light:hover, .btn-outline-light:hover {
-    background: #00ff00;
-    color: black;
-    box-shadow: 0 0 15px #00ff00, 0 0 30px #00ccff;
-    transform: scale(1.05);
-}
-.btn-glitch::before { content: attr(data-text); position: absolute; left: -2px; text-shadow: -2px 0 #ff00ff; clip: rect(0,0,0,0); animation: glitchTop 2s infinite linear alternate-reverse;}
-.btn-glitch::after { content: attr(data-text); position: absolute; left: 2px; text-shadow: -2px 0 #00ccff; clip: rect(0,0,0,0); animation: glitchBottom 1.5s infinite linear alternate-reverse;}
+    /* ===== Container ===== */
+    .container {
+        backdrop-filter: blur(6px);
+        background: rgba(0, 0, 0, 0.65);
+        border-radius: 20px;
+        padding: 35px;
+        box-shadow: 0 0 30px rgba(0, 255, 0, 0.6);
+        border: 1px solid rgba(0, 255, 0, 0.5);
+        position: relative;
+        overflow: hidden;
+    }
 
-/* ===== Artigos ===== */
-.artigos-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill,minmax(300px,1fr));
-    gap: 20px;
-    margin-top: 20px;
-}
-.artigo-card {
-    background: rgba(255,255,255,0.05);
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 0 15px rgba(0,255,0,0.3);
-    transition: transform 0.3s, box-shadow 0.3s;
-}
-.artigo-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 0 25px #00ff00, 0 0 40px #00ccff;
-}
-.artigo-card h3 { font-size: 18px; margin-bottom: 10px; color: #7fff7f; }
-.artigo-card p { font-size: 14px; color: #b6ffb6; margin-bottom: 10px; }
-.artigo-card a { text-decoration: none; color: #00ccff; font-weight: bold; }
-.artigo-card a:hover { color: #00ff7f; text-decoration: underline; }
+    .container::before {
+        content: "";
+        position: absolute;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        background: linear-gradient(90deg, #00ff00, #00ccff, #9d00ff, #00ff00);
+        background-size: 400% 400%;
+        z-index: -1;
+        border-radius: 20px;
+        filter: blur(8px);
+        animation: neonBorder 10s linear infinite;
+    }
+
+    @keyframes neonBorder {
+        0% {
+            background-position: 0% 50%;
+        }
+
+        50% {
+            background-position: 100% 50%;
+        }
+
+        100% {
+            background-position: 0% 50%;
+        }
+    }
+
+    /* ===== Footer ===== */
+    footer {
+        background: rgba(0, 0, 0, 0.9);
+        color: #00ff00;
+        position: relative;
+        border-top: 2px solid #00ff00;
+        box-shadow: 0 -5px 15px rgba(0, 255, 0, 0.5);
+    }
+
+    footer::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(90deg, #00ff00, #00ccff, #9d00ff, #00ff00);
+        background-size: 300% 300%;
+        animation: neonBar 6s linear infinite;
+    }
+
+    @keyframes neonBar {
+        0% {
+            background-position: 0% 50%;
+        }
+
+        100% {
+            background-position: 200% 50%;
+        }
+    }
+
+    footer a {
+        color: #00ff00;
+        font-size: 1.2rem;
+        margin: 0 8px;
+        transition: 0.3s;
+    }
+
+    footer a:hover {
+        color: #7fff7f;
+        text-shadow: 0 0 5px #00ff00, 0 0 15px #00ccff, 0 0 25px #9d00ff;
+    }
+
+    /* ===== Títulos Hacker ===== */
+    h1,
+    h2,
+    h3 {
+        color: #7fff7f;
+        text-shadow: 0 0 10px #00ff00, 0 0 20px #00ccff;
+        overflow: hidden;
+        white-space: nowrap;
+        border-right: 2px solid #00ff00;
+        width: 0;
+        animation: typing 4s steps(40, end) forwards, blink 0.8s infinite;
+    }
+
+    @keyframes typing {
+        from {
+            width: 0
+        }
+
+        to {
+            width: 100%
+        }
+    }
+
+    @keyframes blink {
+        50% {
+            border-color: transparent
+        }
+    }
+
+    /* ===== Glitch ===== */
+    .glitch {
+        position: relative;
+        display: inline-block;
+        color: #00ff00;
+        font-weight: bold;
+        text-transform: uppercase;
+        text-shadow: 0 0 5px #00ff00, 0 0 15px #00ccff, 0 0 25px #9d00ff;
+        animation: glitchAnim 2s infinite;
+    }
+
+    .glitch::before,
+    .glitch::after {
+        content: attr(data-text);
+        position: absolute;
+        left: 0;
+        width: 100%;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+    }
+
+    .glitch::before {
+        animation: glitchTop 3s infinite linear alternate-reverse;
+        color: #ff00ff;
+        text-shadow: 2px 2px #00ffea;
+    }
+
+    .glitch::after {
+        animation: glitchBottom 2.5s infinite linear alternate-reverse;
+        color: #00ffea;
+        text-shadow: -2px -2px #ff00ff;
+    }
+
+    @keyframes glitchAnim {
+        0% {
+            transform: none;
+        }
+
+        20% {
+            transform: skew(5deg);
+        }
+
+        40% {
+            transform: none;
+        }
+
+        60% {
+            transform: skew(-5deg);
+        }
+
+        100% {
+            transform: none;
+        }
+    }
+
+    @keyframes glitchTop {
+        0% {
+            clip: rect(0, 9999px, 0, 0);
+        }
+
+        10% {
+            clip: rect(10px, 9999px, 40px, 0);
+        }
+
+        20% {
+            clip: rect(85px, 9999px, 140px, 0);
+        }
+
+        40% {
+            clip: rect(20px, 9999px, 80px, 0);
+        }
+
+        60% {
+            clip: rect(5px, 9999px, 30px, 0);
+        }
+
+        100% {
+            clip: rect(0, 9999px, 0, 0);
+        }
+    }
+
+    @keyframes glitchBottom {
+        0% {
+            clip: rect(0, 9999px, 0, 0);
+        }
+
+        15% {
+            clip: rect(60px, 9999px, 100px, 0);
+        }
+
+        30% {
+            clip: rect(25px, 9999px, 60px, 0);
+        }
+
+        50% {
+            clip: rect(10px, 9999px, 40px, 0);
+        }
+
+        80% {
+            clip: rect(40px, 9999px, 90px, 0);
+        }
+
+        100% {
+            clip: rect(0, 9999px, 0, 0);
+        }
+    }
+
+    /* ===== Botões ===== */
+    .btn-light,
+    .btn-outline-light {
+        border: 1px solid #00ff00;
+        color: #00ff00;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.4s ease;
+    }
+
+    .btn-light:hover,
+    .btn-outline-light:hover {
+        background: #00ff00;
+        color: black;
+        box-shadow: 0 0 15px #00ff00, 0 0 30px #00ccff;
+        transform: scale(1.05);
+    }
+
+    .btn-glitch::before {
+        content: attr(data-text);
+        position: absolute;
+        left: -2px;
+        text-shadow: -2px 0 #ff00ff;
+        clip: rect(0, 0, 0, 0);
+        animation: glitchTop 2s infinite linear alternate-reverse;
+    }
+
+    .btn-glitch::after {
+        content: attr(data-text);
+        position: absolute;
+        left: 2px;
+        text-shadow: -2px 0 #00ccff;
+        clip: rect(0, 0, 0, 0);
+        animation: glitchBottom 1.5s infinite linear alternate-reverse;
+    }
+
+    /* ===== Artigos ===== */
+    .artigos-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+
+    .artigo-card {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .artigo-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0 25px #00ff00, 0 0 40px #00ccff;
+    }
+
+    .artigo-card h3 {
+        font-size: 18px;
+        margin-bottom: 10px;
+        color: #7fff7f;
+    }
+
+    .artigo-card p {
+        font-size: 14px;
+        color: #b6ffb6;
+        margin-bottom: 10px;
+    }
+
+    .artigo-card a {
+        text-decoration: none;
+        color: #00ccff;
+        font-weight: bold;
+    }
+
+    .artigo-card a:hover {
+        color: #00ff7f;
+        text-decoration: underline;
+    }
 </style>
 
 <div class="container my-5 text-center">
@@ -203,7 +370,8 @@ h1, h2, h3 {
     <div class="artigo-card">
         <h3>O que é Engenharia Social?</h3>
         <p>Entenda como hackers usam manipulação psicológica em ataques.</p>
-        <a href="https://www.kaspersky.com.br/resource-center/threats/what-is-social-engineering" target="_blank">Ler mais</a>
+        <a href="https://www.kaspersky.com.br/resource-center/threats/what-is-social-engineering" target="_blank">Ler
+            mais</a>
     </div>
     <div class="artigo-card">
         <h3>Fundamentos de Redes de Computadores</h3>
@@ -248,44 +416,43 @@ h1, h2, h3 {
 </footer>
 
 <script>
-// ===== Efeito Matrix =====
-const canvas = document.getElementById('matrix-bg');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+    // ===== Efeito Matrix =====
+    const canvas = document.getElementById('matrix-bg');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-const letters = "アカサタナハマヤラワABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-const fontSize = 16;
-let columns = canvas.width / fontSize;
-const drops = Array.from({length: columns}, () => Math.random() * canvas.height);
+    const letters = "アカサタナハマヤラワABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const fontSize = 16;
+    let columns = canvas.width / fontSize;
+    const drops = Array.from({ length: columns }, () => Math.random() * canvas.height);
 
-function drawMatrix() {
-    ctx.fillStyle = "rgba(0,0,0,0.08)";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
-    ctx.font = fontSize + "px monospace";
-    const colors = ["#00ff00","#00ccff","#9d00ff"];
-    for(let i=0;i<drops.length;i++){
-        const text = letters.charAt(Math.floor(Math.random()*letters.length));
-        ctx.fillStyle = colors[Math.floor(Math.random()*colors.length)];
-        ctx.fillText(text,i*fontSize,drops[i]*fontSize);
-        drops[i]++;
-        if(drops[i]*fontSize>canvas.height && Math.random()>0.975) drops[i]=0;
+    function drawMatrix() {
+        ctx.fillStyle = "rgba(0,0,0,0.08)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.font = fontSize + "px monospace";
+        const colors = ["#00ff00", "#00ccff", "#9d00ff"];
+        for (let i = 0; i < drops.length; i++) {
+            const text = letters.charAt(Math.floor(Math.random() * letters.length));
+            ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+            drops[i]++;
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        }
     }
-}
-setInterval(drawMatrix,50);
+    setInterval(drawMatrix, 50);
 
-window.addEventListener('resize',()=>{
-    canvas.width=window.innerWidth;
-    canvas.height=window.innerHeight;
-    columns=canvas.width/fontSize;
-});
-
-// ===== Digitação Hacker =====
-document.addEventListener("DOMContentLoaded",()=>{
-    document.querySelectorAll("h1, h2, h3").forEach((title,index)=>{
-        setTimeout(()=>{title.style.width=title.scrollWidth+"px";},index*1500);
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        columns = canvas.width / fontSize;
     });
-});
+
+    // ===== Digitação Hacker =====
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll("h1, h2, h3").forEach((title, index) => {
+            setTimeout(() => { title.style.width = title.scrollWidth + "px"; }, index * 1500);
+        });
+    });
 </script>
 {% endblock %}
-
