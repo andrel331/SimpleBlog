@@ -1,0 +1,23 @@
+{
+  "name": "simpleblog",
+  "version": "1.0.0",
+  "description": "SimpleBlog beta2 Maroquio",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andrel331/SimpleBlog.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/andrel331/SimpleBlog/issues"
+  },
+  "homepage": "https://github.com/andrel331/SimpleBlog#readme",
+  "dependencies": {
+    "cypress": "^15.5.0"
+  }
+}
