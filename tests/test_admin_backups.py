@@ -2,6 +2,7 @@
 Testes de gerenciamento de backups
 Testa criação, listagem, restauração, exclusão e download de backups
 """
+
 import pytest
 from fastapi import status
 from pathlib import Path
@@ -12,8 +13,13 @@ class TestListarBackups:
 
     def test_listar_backups_requer_admin(self, cliente_autenticado):
         """Autor não deve acessar listagem de backups"""
-        response = cliente_autenticado.get("/admin/backups/listar", follow_redirects=False)
-        assert response.status_code in [status.HTTP_303_SEE_OTHER, status.HTTP_403_FORBIDDEN]
+        response = cliente_autenticado.get(
+            "/admin/backups/listar", follow_redirects=False
+        )
+        assert response.status_code in [
+            status.HTTP_303_SEE_OTHER,
+            status.HTTP_403_FORBIDDEN,
+        ]
 
     def test_listar_backups_admin_acessa(self, admin_autenticado):
         """Admin deve acessar listagem de backups"""
@@ -31,10 +37,15 @@ class TestListarBackups:
         response = client.get("/admin/backups/listar", follow_redirects=False)
         assert response.status_code == status.HTTP_303_SEE_OTHER
 
-    def test_vendedor_nao_acessa_listagem(self, vendedor_autenticado):
+    def test_leitor_nao_acessa_listagem(self, leitor_autenticado):
         """Leitor não deve acessar listagem de backups"""
-        response = vendedor_autenticado.get("/admin/backups/listar", follow_redirects=False)
-        assert response.status_code in [status.HTTP_303_SEE_OTHER, status.HTTP_403_FORBIDDEN]
+        response = leitor_autenticado.get(
+            "/admin/backups/listar", follow_redirects=False
+        )
+        assert response.status_code in [
+            status.HTTP_303_SEE_OTHER,
+            status.HTTP_403_FORBIDDEN,
+        ]
 
 
 class TestCriarBackup:
@@ -42,7 +53,9 @@ class TestCriarBackup:
 
     def test_criar_backup_por_admin(self, admin_autenticado):
         """Admin deve poder criar backup"""
-        response = admin_autenticado.post("/admin/backups/criar", follow_redirects=False)
+        response = admin_autenticado.post(
+            "/admin/backups/criar", follow_redirects=False
+        )
 
         # Deve redirecionar para listagem
         assert response.status_code == status.HTTP_303_SEE_OTHER
@@ -75,13 +88,23 @@ class TestCriarBackup:
 
     def test_cliente_nao_pode_criar_backup(self, cliente_autenticado):
         """Autor não deve poder criar backup"""
-        response = cliente_autenticado.post("/admin/backups/criar", follow_redirects=False)
-        assert response.status_code in [status.HTTP_303_SEE_OTHER, status.HTTP_403_FORBIDDEN]
+        response = cliente_autenticado.post(
+            "/admin/backups/criar", follow_redirects=False
+        )
+        assert response.status_code in [
+            status.HTTP_303_SEE_OTHER,
+            status.HTTP_403_FORBIDDEN,
+        ]
 
-    def test_vendedor_nao_pode_criar_backup(self, vendedor_autenticado):
+    def test_leitor_nao_pode_criar_backup(self, leitor_autenticado):
         """Leitor não deve poder criar backup"""
-        response = vendedor_autenticado.post("/admin/backups/criar", follow_redirects=False)
-        assert response.status_code in [status.HTTP_303_SEE_OTHER, status.HTTP_403_FORBIDDEN]
+        response = leitor_autenticado.post(
+            "/admin/backups/criar", follow_redirects=False
+        )
+        assert response.status_code in [
+            status.HTTP_303_SEE_OTHER,
+            status.HTTP_403_FORBIDDEN,
+        ]
 
 
 class TestRestaurarBackup:
@@ -95,20 +118,22 @@ class TestRestaurarBackup:
 
         # Obter nome do backup criado
         from util import backup_util
+
         backups = backup_util.listar_backups()
         assert len(backups) > 0
         nome_backup = backups[0].nome_arquivo
 
         # Restaurar backup
         response = admin_autenticado.post(
-            f"/admin/backups/restaurar/{nome_backup}",
-            follow_redirects=False
+            f"/admin/backups/restaurar/{nome_backup}", follow_redirects=False
         )
 
         # Deve redirecionar
         assert response.status_code == status.HTTP_303_SEE_OTHER
 
-    def test_restaurar_backup_cria_backup_automatico(self, admin_autenticado, criar_backup):
+    def test_restaurar_backup_cria_backup_automatico(
+        self, admin_autenticado, criar_backup
+    ):
         """Restaurar deve criar backup automático antes"""
         from util import backup_util
 
@@ -127,8 +152,7 @@ class TestRestaurarBackup:
     def test_restaurar_backup_inexistente(self, admin_autenticado):
         """Deve tratar restauração de backup inexistente"""
         response = admin_autenticado.post(
-            "/admin/backups/restaurar/backup_inexistente.db",
-            follow_redirects=False
+            "/admin/backups/restaurar/backup_inexistente.db", follow_redirects=False
         )
 
         # Deve redirecionar (com mensagem de erro)
@@ -138,14 +162,18 @@ class TestRestaurarBackup:
         """Autor não deve poder restaurar backup"""
         criar_backup()
         from util import backup_util
+
         backups = backup_util.listar_backups()
 
         if len(backups) > 0:
             response = cliente_autenticado.post(
                 f"/admin/backups/restaurar/{backups[0].nome_arquivo}",
-                follow_redirects=False
+                follow_redirects=False,
             )
-            assert response.status_code in [status.HTTP_303_SEE_OTHER, status.HTTP_403_FORBIDDEN]
+            assert response.status_code in [
+                status.HTTP_303_SEE_OTHER,
+                status.HTTP_403_FORBIDDEN,
+            ]
 
 
 class TestExcluirBackup:
@@ -157,14 +185,14 @@ class TestExcluirBackup:
         criar_backup()
 
         from util import backup_util
+
         backups_antes = backup_util.listar_backups()
         assert len(backups_antes) > 0
         nome_backup = backups_antes[0].nome_arquivo
 
         # Excluir
         response = admin_autenticado.post(
-            f"/admin/backups/excluir/{nome_backup}",
-            follow_redirects=False
+            f"/admin/backups/excluir/{nome_backup}", follow_redirects=False
         )
 
         # Deve redirecionar
@@ -178,8 +206,7 @@ class TestExcluirBackup:
     def test_excluir_backup_inexistente(self, admin_autenticado):
         """Deve tratar exclusão de backup inexistente"""
         response = admin_autenticado.post(
-            "/admin/backups/excluir/backup_inexistente.db",
-            follow_redirects=False
+            "/admin/backups/excluir/backup_inexistente.db", follow_redirects=False
         )
 
         # Deve redirecionar (com mensagem de erro)
@@ -189,14 +216,18 @@ class TestExcluirBackup:
         """Autor não deve poder excluir backup"""
         criar_backup()
         from util import backup_util
+
         backups = backup_util.listar_backups()
 
         if len(backups) > 0:
             response = cliente_autenticado.post(
                 f"/admin/backups/excluir/{backups[0].nome_arquivo}",
-                follow_redirects=False
+                follow_redirects=False,
             )
-            assert response.status_code in [status.HTTP_303_SEE_OTHER, status.HTTP_403_FORBIDDEN]
+            assert response.status_code in [
+                status.HTTP_303_SEE_OTHER,
+                status.HTTP_403_FORBIDDEN,
+            ]
 
 
 class TestDownloadBackup:
@@ -208,6 +239,7 @@ class TestDownloadBackup:
         criar_backup()
 
         from util import backup_util
+
         backups = backup_util.listar_backups()
         assert len(backups) > 0
         nome_backup = backups[0].nome_arquivo
@@ -222,38 +254,48 @@ class TestDownloadBackup:
     def test_download_backup_inexistente(self, admin_autenticado):
         """Deve tratar download de backup inexistente"""
         response = admin_autenticado.get(
-            "/admin/backups/download/backup_inexistente.db",
-            follow_redirects=False
+            "/admin/backups/download/backup_inexistente.db", follow_redirects=False
         )
 
         # Deve redirecionar ou retornar 404
-        assert response.status_code in [status.HTTP_303_SEE_OTHER, status.HTTP_404_NOT_FOUND]
+        assert response.status_code in [
+            status.HTTP_303_SEE_OTHER,
+            status.HTTP_404_NOT_FOUND,
+        ]
 
     def test_cliente_nao_pode_baixar_backup(self, cliente_autenticado, criar_backup):
         """Autor não deve poder baixar backup"""
         criar_backup()
         from util import backup_util
+
         backups = backup_util.listar_backups()
 
         if len(backups) > 0:
             response = cliente_autenticado.get(
                 f"/admin/backups/download/{backups[0].nome_arquivo}",
-                follow_redirects=False
+                follow_redirects=False,
             )
-            assert response.status_code in [status.HTTP_303_SEE_OTHER, status.HTTP_403_FORBIDDEN]
+            assert response.status_code in [
+                status.HTTP_303_SEE_OTHER,
+                status.HTTP_403_FORBIDDEN,
+            ]
 
-    def test_vendedor_nao_pode_baixar_backup(self, vendedor_autenticado, criar_backup):
+    def test_leitor_nao_pode_baixar_backup(self, leitor_autenticado, criar_backup):
         """Leitor não deve poder baixar backup"""
         criar_backup()
         from util import backup_util
+
         backups = backup_util.listar_backups()
 
         if len(backups) > 0:
-            response = vendedor_autenticado.get(
+            response = leitor_autenticado.get(
                 f"/admin/backups/download/{backups[0].nome_arquivo}",
-                follow_redirects=False
+                follow_redirects=False,
             )
-            assert response.status_code in [status.HTTP_303_SEE_OTHER, status.HTTP_403_FORBIDDEN]
+            assert response.status_code in [
+                status.HTTP_303_SEE_OTHER,
+                status.HTTP_403_FORBIDDEN,
+            ]
 
 
 class TestFluxoCompletoBackup:
@@ -273,8 +315,7 @@ class TestFluxoCompletoBackup:
 
         # 3. Restaurar
         response_restaurar = admin_autenticado.post(
-            f"/admin/backups/restaurar/{nome_backup}",
-            follow_redirects=False
+            f"/admin/backups/restaurar/{nome_backup}", follow_redirects=False
         )
         assert response_restaurar.status_code == status.HTTP_303_SEE_OTHER
 
@@ -286,8 +327,7 @@ class TestFluxoCompletoBackup:
         if len(backups_apos_restaurar) > 0:
             nome_para_excluir = backups_apos_restaurar[0].nome_arquivo
             response_excluir = admin_autenticado.post(
-                f"/admin/backups/excluir/{nome_para_excluir}",
-                follow_redirects=False
+                f"/admin/backups/excluir/{nome_para_excluir}", follow_redirects=False
             )
             assert response_excluir.status_code == status.HTTP_303_SEE_OTHER
 

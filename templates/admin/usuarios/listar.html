@@ -36,7 +36,7 @@
                                 <td>
                                     {% if usuario.perfil == 'Administrador' %}
                                     <span class="badge bg-danger">{{ usuario.perfil }}</span>
-                                    {% elif usuario.perfil == 'Vendedor' %}
+                                    {% elif usuario.perfil == 'Leitor' %}
                                     <span class="badge bg-warning text-dark">{{ usuario.perfil }}</span>
                                     {% else %}
                                     <span class="badge bg-info">{{ usuario.perfil }}</span>
@@ -46,13 +46,11 @@
                                 <td class="text-center">
                                     <div class="btn-group btn-group-sm" role="group">
                                         <a href="/admin/usuarios/editar/{{ usuario.id }}"
-                                            class="btn btn-outline-primary"
-                                            title="Editar"
+                                            class="btn btn-outline-primary" title="Editar"
                                             aria-label="Editar usuário {{ usuario.nome }}">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <button type="button" class="btn btn-outline-danger"
-                                            title="Excluir"
+                                        <button type="button" class="btn btn-outline-danger" title="Excluir"
                                             aria-label="Excluir usuário {{ usuario.nome }}"
                                             onclick="excluirUsuario({{ usuario.id }}, '{{ usuario.nome|replace("'", "\\'") }}', '{{ usuario.email }}', '{{ usuario.perfil }}')">
                                             <i class="bi bi-trash"></i>
@@ -72,9 +70,9 @@
                         {% if admins %}
                         | Administradores: <strong class="text-danger">{{ admins|length }}</strong>
                         {% endif %}
-                        {% set vendedores = usuarios|selectattr('perfil', 'equalto', 'Vendedor')|list %}
-                        {% if vendedores %}
-                        | Vendedores: <strong class="text-warning">{{ vendedores|length }}</strong>
+                        {% set leitores = usuarios|selectattr('perfil', 'equalto', 'Leitor')|list %}
+                        {% if leitores %}
+                        | Leitores: <strong class="text-warning">{{ leitores|length }}</strong>
                         {% endif %}
                         {% set clientes = usuarios|selectattr('perfil', 'equalto', 'Cliente')|list %}
                         {% if clientes %}
@@ -102,8 +100,8 @@
         let perfilBadge;
         if (usuarioPerfil === 'Administrador') {
             perfilBadge = '<span class="badge bg-danger">Administrador</span>';
-        } else if (usuarioPerfil === 'Vendedor') {
-            perfilBadge = '<span class="badge bg-warning text-dark">Vendedor</span>';
+        } else if (usuarioPerfil === 'Leitor') {
+            perfilBadge = '<span class="badge bg-warning text-dark">Leitor</span>';
         } else {
             perfilBadge = '<span class="badge bg-info">Cliente</span>';
         }

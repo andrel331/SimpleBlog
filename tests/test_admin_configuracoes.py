@@ -2,6 +2,7 @@
 Testes de configurações administrativas
 Testa seleção de temas visuais e sistema de auditoria de logs
 """
+
 import pytest
 from fastapi import status
 from pathlib import Path
@@ -14,7 +15,10 @@ class TestTema:
     def test_get_tema_requer_admin(self, cliente_autenticado):
         """Autor não deve acessar seletor de temas"""
         response = cliente_autenticado.get("/admin/tema", follow_redirects=False)
-        assert response.status_code in [status.HTTP_303_SEE_OTHER, status.HTTP_403_FORBIDDEN]
+        assert response.status_code in [
+            status.HTTP_303_SEE_OTHER,
+            status.HTTP_403_FORBIDDEN,
+        ]
 
     def test_get_tema_admin_acessa(self, admin_autenticado):
         """Admin deve acessar seletor de temas"""
@@ -34,9 +38,9 @@ class TestTema:
         css_original = Path("static/css/bootswatch/original.bootstrap.min.css")
 
         if css_original.exists():
-            response = admin_autenticado.post("/admin/tema/aplicar", data={
-                "tema": "original"
-            }, follow_redirects=False)
+            response = admin_autenticado.post(
+                "/admin/tema/aplicar", data={"tema": "original"}, follow_redirects=False
+            )
 
             # Deve redirecionar
             assert response.status_code == status.HTTP_303_SEE_OTHER
@@ -44,9 +48,11 @@ class TestTema:
 
     def test_aplicar_tema_inexistente(self, admin_autenticado):
         """Deve rejeitar tema inexistente"""
-        response = admin_autenticado.post("/admin/tema/aplicar", data={
-            "tema": "tema_que_nao_existe_xyz123"
-        }, follow_redirects=False)
+        response = admin_autenticado.post(
+            "/admin/tema/aplicar",
+            data={"tema": "tema_que_nao_existe_xyz123"},
+            follow_redirects=False,
+        )
 
         # Deve redirecionar com mensagem de erro
         assert response.status_code == status.HTTP_303_SEE_OTHER
@@ -63,9 +69,7 @@ class TestTema:
             config.obter("theme", "default")
 
             # Aplicar tema
-            admin_autenticado.post("/admin/tema/aplicar", data={
-                "tema": "original"
-            })
+            admin_autenticado.post("/admin/tema/aplicar", data={"tema": "original"})
 
             # Cache deve estar vazio após aplicação
             # (testar indiretamente verificando que a configuração é relida)
@@ -74,11 +78,14 @@ class TestTema:
 
     def test_cliente_nao_pode_aplicar_tema(self, cliente_autenticado):
         """Autor não deve poder aplicar tema"""
-        response = cliente_autenticado.post("/admin/tema/aplicar", data={
-            "tema": "original"
-        }, follow_redirects=False)
+        response = cliente_autenticado.post(
+            "/admin/tema/aplicar", data={"tema": "original"}, follow_redirects=False
+        )
 
-        assert response.status_code in [status.HTTP_303_SEE_OTHER, status.HTTP_403_FORBIDDEN]
+        assert response.status_code in [
+            status.HTTP_303_SEE_OTHER,
+            status.HTTP_403_FORBIDDEN,
+        ]
 
 
 class TestAuditoria:
@@ -87,7 +94,10 @@ class TestAuditoria:
     def test_get_auditoria_requer_admin(self, cliente_autenticado):
         """Autor não deve acessar auditoria"""
         response = cliente_autenticado.get("/admin/auditoria", follow_redirects=False)
-        assert response.status_code in [status.HTTP_303_SEE_OTHER, status.HTTP_403_FORBIDDEN]
+        assert response.status_code in [
+            status.HTTP_303_SEE_OTHER,
+            status.HTTP_403_FORBIDDEN,
+        ]
 
     def test_get_auditoria_admin_acessa(self, admin_autenticado):
         """Admin deve acessar página de auditoria"""
@@ -97,84 +107,80 @@ class TestAuditoria:
 
     def test_filtrar_logs_por_data(self, admin_autenticado):
         """Deve permitir filtrar logs por data"""
-        data_hoje = datetime.now().strftime('%Y-%m-%d')
+        data_hoje = datetime.now().strftime("%Y-%m-%d")
 
-        response = admin_autenticado.post("/admin/auditoria/filtrar", data={
-            "data": data_hoje,
-            "nivel": "TODOS"
-        })
+        response = admin_autenticado.post(
+            "/admin/auditoria/filtrar", data={"data": data_hoje, "nivel": "TODOS"}
+        )
 
         assert response.status_code == status.HTTP_200_OK
 
     def test_filtrar_logs_nivel_info(self, admin_autenticado):
         """Deve permitir filtrar logs por nível INFO"""
-        data_hoje = datetime.now().strftime('%Y-%m-%d')
+        data_hoje = datetime.now().strftime("%Y-%m-%d")
 
-        response = admin_autenticado.post("/admin/auditoria/filtrar", data={
-            "data": data_hoje,
-            "nivel": "INFO"
-        })
+        response = admin_autenticado.post(
+            "/admin/auditoria/filtrar", data={"data": data_hoje, "nivel": "INFO"}
+        )
 
         assert response.status_code == status.HTTP_200_OK
 
     def test_filtrar_logs_nivel_warning(self, admin_autenticado):
         """Deve permitir filtrar logs por nível WARNING"""
-        data_hoje = datetime.now().strftime('%Y-%m-%d')
+        data_hoje = datetime.now().strftime("%Y-%m-%d")
 
-        response = admin_autenticado.post("/admin/auditoria/filtrar", data={
-            "data": data_hoje,
-            "nivel": "WARNING"
-        })
+        response = admin_autenticado.post(
+            "/admin/auditoria/filtrar", data={"data": data_hoje, "nivel": "WARNING"}
+        )
 
         assert response.status_code == status.HTTP_200_OK
 
     def test_filtrar_logs_nivel_error(self, admin_autenticado):
         """Deve permitir filtrar logs por nível ERROR"""
-        data_hoje = datetime.now().strftime('%Y-%m-%d')
+        data_hoje = datetime.now().strftime("%Y-%m-%d")
 
-        response = admin_autenticado.post("/admin/auditoria/filtrar", data={
-            "data": data_hoje,
-            "nivel": "ERROR"
-        })
+        response = admin_autenticado.post(
+            "/admin/auditoria/filtrar", data={"data": data_hoje, "nivel": "ERROR"}
+        )
 
         assert response.status_code == status.HTTP_200_OK
 
     def test_filtrar_logs_nivel_todos(self, admin_autenticado):
         """Deve permitir filtrar logs sem filtro de nível (TODOS)"""
-        data_hoje = datetime.now().strftime('%Y-%m-%d')
+        data_hoje = datetime.now().strftime("%Y-%m-%d")
 
-        response = admin_autenticado.post("/admin/auditoria/filtrar", data={
-            "data": data_hoje,
-            "nivel": "TODOS"
-        })
+        response = admin_autenticado.post(
+            "/admin/auditoria/filtrar", data={"data": data_hoje, "nivel": "TODOS"}
+        )
 
         assert response.status_code == status.HTTP_200_OK
 
     def test_filtrar_logs_data_sem_arquivo(self, admin_autenticado):
         """Deve tratar data sem arquivo de log"""
         # Data muito antiga (provavelmente não tem log)
-        response = admin_autenticado.post("/admin/auditoria/filtrar", data={
-            "data": "2000-01-01",
-            "nivel": "TODOS"
-        })
+        response = admin_autenticado.post(
+            "/admin/auditoria/filtrar", data={"data": "2000-01-01", "nivel": "TODOS"}
+        )
 
         assert response.status_code == status.HTTP_200_OK
         # Deve ter mensagem sobre arquivo não encontrado
-        assert "encontrado" in response.text.lower() or "nenhum" in response.text.lower()
+        assert (
+            "encontrado" in response.text.lower() or "nenhum" in response.text.lower()
+        )
 
     def test_filtrar_logs_registra_acao(self, admin_autenticado):
         """Filtrar logs deve registrar a própria ação de auditoria"""
         from util.logger_config import logger
-        data_hoje = datetime.now().strftime('%Y-%m-%d')
+
+        data_hoje = datetime.now().strftime("%Y-%m-%d")
 
         # Fazer auditoria
-        admin_autenticado.post("/admin/auditoria/filtrar", data={
-            "data": data_hoje,
-            "nivel": "INFO"
-        })
+        admin_autenticado.post(
+            "/admin/auditoria/filtrar", data={"data": data_hoje, "nivel": "INFO"}
+        )
 
         # Verificar que log foi criado (indiretamente - arquivo existe)
-        data_formatada = data_hoje.replace('-', '.')
+        data_formatada = data_hoje.replace("-", ".")
         log_file = Path(f"logs/app.{data_formatada}.log")
 
         # Como estamos em teste, log pode ou não existir
@@ -183,14 +189,18 @@ class TestAuditoria:
 
     def test_cliente_nao_pode_filtrar_logs(self, cliente_autenticado):
         """Autor não deve poder filtrar logs"""
-        data_hoje = datetime.now().strftime('%Y-%m-%d')
+        data_hoje = datetime.now().strftime("%Y-%m-%d")
 
-        response = cliente_autenticado.post("/admin/auditoria/filtrar", data={
-            "data": data_hoje,
-            "nivel": "TODOS"
-        }, follow_redirects=False)
+        response = cliente_autenticado.post(
+            "/admin/auditoria/filtrar",
+            data={"data": data_hoje, "nivel": "TODOS"},
+            follow_redirects=False,
+        )
 
-        assert response.status_code in [status.HTTP_303_SEE_OTHER, status.HTTP_403_FORBIDDEN]
+        assert response.status_code in [
+            status.HTTP_303_SEE_OTHER,
+            status.HTTP_403_FORBIDDEN,
+        ]
 
 
 class TestSegurancaConfiguracoes:
@@ -206,12 +216,18 @@ class TestSegurancaConfiguracoes:
         response = client.get("/admin/auditoria", follow_redirects=False)
         assert response.status_code == status.HTTP_303_SEE_OTHER
 
-    def test_vendedor_nao_acessa_tema(self, vendedor_autenticado):
+    def test_leitor_nao_acessa_tema(self, leitor_autenticado):
         """Leitor não deve acessar temas"""
-        response = vendedor_autenticado.get("/admin/tema", follow_redirects=False)
-        assert response.status_code in [status.HTTP_303_SEE_OTHER, status.HTTP_403_FORBIDDEN]
+        response = leitor_autenticado.get("/admin/tema", follow_redirects=False)
+        assert response.status_code in [
+            status.HTTP_303_SEE_OTHER,
+            status.HTTP_403_FORBIDDEN,
+        ]
 
-    def test_vendedor_nao_acessa_auditoria(self, vendedor_autenticado):
+    def test_leitor_nao_acessa_auditoria(self, leitor_autenticado):
         """Leitor não deve acessar auditoria"""
-        response = vendedor_autenticado.get("/admin/auditoria", follow_redirects=False)
-        assert response.status_code in [status.HTTP_303_SEE_OTHER, status.HTTP_403_FORBIDDEN]
+        response = leitor_autenticado.get("/admin/auditoria", follow_redirects=False)
+        assert response.status_code in [
+            status.HTTP_303_SEE_OTHER,
+            status.HTTP_403_FORBIDDEN,
+        ]

@@ -2,6 +2,7 @@
 Testes de rotas do usuário
 Testa acesso ao dashboard do usuário autenticado
 """
+
 import pytest
 from fastapi import status
 
@@ -35,8 +36,8 @@ class TestDashboard:
         assert response.status_code == status.HTTP_200_OK
         assert admin_teste["nome"] in response.text
 
-    def test_dashboard_vendedor_acessa(self, vendedor_autenticado, vendedor_teste):
+    def test_dashboard_leitor_acessa(self, leitor_autenticado, leitor_teste):
         """Leitor também deve poder acessar seu dashboard"""
-        response = vendedor_autenticado.get("/usuario")
+        response = leitor_autenticado.get("/usuario")
         assert response.status_code == status.HTTP_200_OK
-        assert vendedor_teste["nome"] in response.text
+        assert leitor_teste["nome"] in response.text

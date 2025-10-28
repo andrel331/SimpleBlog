@@ -75,13 +75,13 @@ tests/
 - **`client`**: Autor HTTP básico sem autenticação
 - **`cliente_autenticado`**: Autor autenticado como AUTOR
 - **`admin_autenticado`**: Autor autenticado como ADMIN
-- **`vendedor_autenticado`**: Autor autenticado como LEITOR
+- **`leitor_autenticado`**: Autor autenticado como LEITOR
 
 ### Fixtures de Dados
 
 - **`usuario_teste`**: Dados de um usuário AUTOR de teste
 - **`admin_teste`**: Dados de um usuário ADMIN de teste
-- **`vendedor_teste`**: Dados de um usuário LEITOR de teste
+- **`leitor_teste`**: Dados de um usuário LEITOR de teste
 - **`tarefa_teste`**: Dados de uma tarefa de teste
 - **`foto_teste_base64`**: Imagem PNG válida em base64
 

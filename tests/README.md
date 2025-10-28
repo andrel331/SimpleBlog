@@ -83,12 +83,12 @@ def test_com_dados_admin(admin_teste):
     assert admin_teste["perfil"] == Perfil.ADMIN.value
 ```
 
-#### `vendedor_teste` - Dados de leitor
+#### `leitor_teste` - Dados de leitor
 Dicionário com dados de um leitor de teste.
 
 ```python
-def test_com_dados_vendedor(vendedor_teste):
-    assert vendedor_teste["perfil"] == Perfil.LEITOR.value
+def test_com_dados_leitor(leitor_teste):
+    assert leitor_teste["perfil"] == Perfil.LEITOR.value
 ```
 
 ### Fixtures de Ação
@@ -132,12 +132,12 @@ def test_listar_usuarios(admin_autenticado):
     assert response.status_code == 200
 ```
 
-#### `vendedor_autenticado` - Autor logado como leitor
+#### `leitor_autenticado` - Autor logado como leitor
 Autor TestClient já autenticado como leitor.
 
 ```python
-def test_acessar_vendas(vendedor_autenticado):
-    response = vendedor_autenticado.get("/vendas")
+def test_acessar_vendas(leitor_autenticado):
+    response = leitor_autenticado.get("/vendas")
     assert response.status_code == 200
 ```
 
