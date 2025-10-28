@@ -99,8 +99,8 @@ O sistema vem com usuários pré-cadastrados para facilitar os testes:
 | Perfil | E-mail | Senha | Descrição |
 |--------|--------|-------|-----------|
 | **Admininistrador** | administrador@email.com | 1234aA@# | Acesso administrativo completo |
-| **Cliente** | cliente@email.com | 1234aA@# | Usuário com perfil Cliente |
-| **Vendedor** | vendedor@email.com | 1234aA@# | Usuário com perfil Vendedor |
+| **Autor** | autor@email.com | 1234aA@# | Usuário com perfil Autor |
+| **Leitor** | leitor@email.com | 1234aA@# | Usuário com perfil Leitor |
 
 > ⚠️ **Importante**: Altere essas senhas em ambiente de produção!
 
@@ -111,7 +111,7 @@ O sistema vem com usuários pré-cadastrados para facilitar os testes:
 - **Login/Logout** com sessões seguras
 - **Cadastro de usuários** com validação de senha forte
 - **Recuperação de senha** por email
-- **Perfis de usuário** (Admin, Cliente, Vendedor - extensível)
+- **Perfis de usuário** (Admin, Autor, Leitor - extensível)
 - **Proteção de rotas** por perfil com decorator `@requer_autenticacao()`
 - **Gerenciamento de usuários** (CRUD completo para admins)
 
@@ -1037,7 +1037,7 @@ DefaultWebApp/
 
 ### Comunicação
 - **Resend** - Envio de e-mails transacionais
-- **Requests** - Cliente HTTP
+- **Requests** - Autor HTTP
 
 ### Desenvolvimento
 - **Python-dotenv** - Gerenciamento de variáveis de ambiente

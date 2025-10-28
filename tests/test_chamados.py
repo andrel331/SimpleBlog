@@ -127,7 +127,7 @@ class TestListarChamados:
 
     def test_usuario_ve_apenas_proprios_chamados(self, client, cliente_autenticado):
         """Usuário deve ver apenas seus próprios chamados"""
-        # Este cliente já está autenticado como um usuário comum
+        # Este autor já está autenticado como um usuário comum
         # Criar primeiro chamado
         response = cliente_autenticado.post("/chamados/cadastrar", data={
             "titulo": "Meu Chamado",

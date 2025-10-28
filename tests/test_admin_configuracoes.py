@@ -12,7 +12,7 @@ class TestTema:
     """Testes de seleção de tema visual"""
 
     def test_get_tema_requer_admin(self, cliente_autenticado):
-        """Cliente não deve acessar seletor de temas"""
+        """Autor não deve acessar seletor de temas"""
         response = cliente_autenticado.get("/admin/tema", follow_redirects=False)
         assert response.status_code in [status.HTTP_303_SEE_OTHER, status.HTTP_403_FORBIDDEN]
 
@@ -73,7 +73,7 @@ class TestTema:
             assert tema_atual is not None
 
     def test_cliente_nao_pode_aplicar_tema(self, cliente_autenticado):
-        """Cliente não deve poder aplicar tema"""
+        """Autor não deve poder aplicar tema"""
         response = cliente_autenticado.post("/admin/tema/aplicar", data={
             "tema": "original"
         }, follow_redirects=False)
@@ -85,7 +85,7 @@ class TestAuditoria:
     """Testes de sistema de auditoria de logs"""
 
     def test_get_auditoria_requer_admin(self, cliente_autenticado):
-        """Cliente não deve acessar auditoria"""
+        """Autor não deve acessar auditoria"""
         response = cliente_autenticado.get("/admin/auditoria", follow_redirects=False)
         assert response.status_code in [status.HTTP_303_SEE_OTHER, status.HTTP_403_FORBIDDEN]
 
@@ -182,7 +182,7 @@ class TestAuditoria:
         assert True
 
     def test_cliente_nao_pode_filtrar_logs(self, cliente_autenticado):
-        """Cliente não deve poder filtrar logs"""
+        """Autor não deve poder filtrar logs"""
         data_hoje = datetime.now().strftime('%Y-%m-%d')
 
         response = cliente_autenticado.post("/admin/auditoria/filtrar", data={
@@ -207,11 +207,11 @@ class TestSegurancaConfiguracoes:
         assert response.status_code == status.HTTP_303_SEE_OTHER
 
     def test_vendedor_nao_acessa_tema(self, vendedor_autenticado):
-        """Vendedor não deve acessar temas"""
+        """Leitor não deve acessar temas"""
         response = vendedor_autenticado.get("/admin/tema", follow_redirects=False)
         assert response.status_code in [status.HTTP_303_SEE_OTHER, status.HTTP_403_FORBIDDEN]
 
     def test_vendedor_nao_acessa_auditoria(self, vendedor_autenticado):
-        """Vendedor não deve acessar auditoria"""
+        """Leitor não deve acessar auditoria"""
         response = vendedor_autenticado.get("/admin/auditoria", follow_redirects=False)
         assert response.status_code in [status.HTTP_303_SEE_OTHER, status.HTTP_403_FORBIDDEN]

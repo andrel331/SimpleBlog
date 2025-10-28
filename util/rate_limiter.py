@@ -174,7 +174,7 @@ class RateLimiter:
 
 def obter_identificador_cliente(request) -> str:
     """
-    Extrai identificador único do cliente (geralmente IP).
+    Extrai identificador único do autor (geralmente IP).
 
     Args:
         request: FastAPI Request object

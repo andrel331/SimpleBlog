@@ -26,7 +26,7 @@ Este documento fornece um guia completo e detalhado para implementar um sistema 
 - ✅ **Debugging**: Mensagens visíveis no Network tab do DevTools
 - ✅ **Infraestrutura**: Não requer configuração especial de load balancer
 
-**Limitação**: SSE é unidirecional (servidor → cliente). Por isso, usamos **HTTP POST** padrão para enviar mensagens (cliente → servidor). Esta combinação é perfeita para chat.
+**Limitação**: SSE é unidirecional (servidor → autor). Por isso, usamos **HTTP POST** padrão para enviar mensagens (autor → servidor). Esta combinação é perfeita para chat.
 
 ### Arquitetura de Alto Nível
 
@@ -1426,7 +1426,7 @@ async def stream_mensagens(
     1. Registra conexão no ChatManager (por usuário, não por sala)
     2. Mantém conexão aberta indefinidamente
     3. Envia eventos SSE quando novas mensagens chegam em QUALQUER sala
-    4. Desconecta automaticamente se cliente fechar
+    4. Desconecta automaticamente se autor fechar
 
     Returns:
         StreamingResponse com eventos SSE
@@ -1443,7 +1443,7 @@ async def stream_mensagens(
                 f"SSE stream iniciado para usuário {usuario_logado['id']}"
             )
 
-            # Loop infinito: enquanto cliente estiver conectado
+            # Loop infinito: enquanto autor estiver conectado
             while True:
                 # Aguarda próxima mensagem/evento na queue
                 evento = await queue.get()
@@ -1458,7 +1458,7 @@ async def stream_mensagens(
                 await asyncio.sleep(0.1)
 
         except asyncio.CancelledError:
-            # Cliente desconectou (normal)
+            # Autor desconectou (normal)
             logger.info(
                 f"SSE stream cancelado para usuário {usuario_logado['id']}"
             )

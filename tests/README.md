@@ -58,7 +58,7 @@ Todas as fixtures estão definidas em `conftest.py` e disponíveis automaticamen
 ### Fixtures Básicas
 
 #### `client` - TestClient FastAPI
-Cliente de teste com sessão limpa para cada teste.
+Autor de teste com sessão limpa para cada teste.
 
 ```python
 def test_acessar_home(client):
@@ -67,12 +67,12 @@ def test_acessar_home(client):
 ```
 
 #### `usuario_teste` - Dados de usuário padrão
-Dicionário com dados de um usuário de teste (Cliente).
+Dicionário com dados de um usuário de teste (Autor).
 
 ```python
 def test_com_dados_usuario(usuario_teste):
     assert usuario_teste["email"] == "teste@example.com"
-    assert usuario_teste["perfil"] == Perfil.CLIENTE.value
+    assert usuario_teste["perfil"] == Perfil.AUTOR.value
 ```
 
 #### `admin_teste` - Dados de admin
@@ -83,12 +83,12 @@ def test_com_dados_admin(admin_teste):
     assert admin_teste["perfil"] == Perfil.ADMIN.value
 ```
 
-#### `vendedor_teste` - Dados de vendedor
-Dicionário com dados de um vendedor de teste.
+#### `vendedor_teste` - Dados de leitor
+Dicionário com dados de um leitor de teste.
 
 ```python
 def test_com_dados_vendedor(vendedor_teste):
-    assert vendedor_teste["perfil"] == Perfil.VENDEDOR.value
+    assert vendedor_teste["perfil"] == Perfil.LEITOR.value
 ```
 
 ### Fixtures de Ação
@@ -112,10 +112,10 @@ def test_fazer_login(client, criar_usuario, usuario_teste, fazer_login):
     assert response.status_code == 303
 ```
 
-### Fixtures de Cliente Autenticado
+### Fixtures de Autor Autenticado
 
-#### `cliente_autenticado` - Cliente logado como usuário
-Cliente TestClient já autenticado como usuário padrão (Cliente).
+#### `cliente_autenticado` - Autor logado como usuário
+Autor TestClient já autenticado como usuário padrão (Autor).
 
 ```python
 def test_acessar_dashboard(cliente_autenticado):
@@ -123,8 +123,8 @@ def test_acessar_dashboard(cliente_autenticado):
     assert response.status_code == 200
 ```
 
-#### `admin_autenticado` - Cliente logado como admin
-Cliente TestClient já autenticado como administrador.
+#### `admin_autenticado` - Autor logado como admin
+Autor TestClient já autenticado como administrador.
 
 ```python
 def test_listar_usuarios(admin_autenticado):
@@ -132,8 +132,8 @@ def test_listar_usuarios(admin_autenticado):
     assert response.status_code == 200
 ```
 
-#### `vendedor_autenticado` - Cliente logado como vendedor
-Cliente TestClient já autenticado como vendedor.
+#### `vendedor_autenticado` - Autor logado como leitor
+Autor TestClient já autenticado como leitor.
 
 ```python
 def test_acessar_vendas(vendedor_autenticado):
@@ -155,8 +155,8 @@ def test_isolamento_dados(client, dois_usuarios, fazer_login):
     # ... verificar que só vê seus dados
 ```
 
-#### `usuario_com_foto` - Cliente com foto de perfil
-Cliente autenticado que já tem foto de perfil salva.
+#### `usuario_com_foto` - Autor com foto de perfil
+Autor autenticado que já tem foto de perfil salva.
 
 ```python
 def test_visualizar_foto(usuario_com_foto):
@@ -484,7 +484,7 @@ def test_fluxo_completo_cadastro_e_login(client):
 
     # 1. Cadastrar novo usuário
     response_cadastro = client.post("/cadastrar", data={
-        "perfil": Perfil.CLIENTE.value,
+        "perfil": Perfil.AUTOR.value,
         "nome": "João da Silva",
         "email": "joao@example.com",
         "senha": "Senha@123",
@@ -499,7 +499,7 @@ def test_fluxo_completo_cadastro_e_login(client):
     usuario = usuario_repo.obter_por_email("joao@example.com")
     assert usuario is not None
     assert usuario.nome == "João da Silva"
-    assert usuario.perfil == Perfil.CLIENTE.value
+    assert usuario.perfil == Perfil.AUTOR.value
 
     # 3. Fazer login
     response_login = client.post("/login", data={
@@ -520,7 +520,7 @@ def test_fluxo_completo_cadastro_e_login(client):
 
 ```python
 def test_cliente_nao_acessa_area_admin(cliente_autenticado):
-    """Cliente não deve ter acesso a áreas administrativas."""
+    """Autor não deve ter acesso a áreas administrativas."""
 
     # Tentar acessar listagem de usuários (admin only)
     response = cliente_autenticado.get("/admin/usuarios/listar", follow_redirects=False)
@@ -601,7 +601,7 @@ def test_restaurar_backup_cria_backup_automatico(
         nome="Usuario Teste",
         email="teste_restauracao@example.com",
         senha=criar_hash_senha("Senha@123"),
-        perfil=Perfil.CLIENTE.value
+        perfil=Perfil.AUTOR.value
     )
     usuario_id = usuario_repo.inserir(novo_usuario)
     assert usuario_id is not None

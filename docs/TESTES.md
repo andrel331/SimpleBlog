@@ -70,18 +70,18 @@ tests/
 
 ## 🧪 Fixtures Disponíveis
 
-### Fixtures de Cliente
+### Fixtures de Autor
 
-- **`client`**: Cliente HTTP básico sem autenticação
-- **`cliente_autenticado`**: Cliente autenticado como CLIENTE
-- **`admin_autenticado`**: Cliente autenticado como ADMIN
-- **`vendedor_autenticado`**: Cliente autenticado como VENDEDOR
+- **`client`**: Autor HTTP básico sem autenticação
+- **`cliente_autenticado`**: Autor autenticado como AUTOR
+- **`admin_autenticado`**: Autor autenticado como ADMIN
+- **`vendedor_autenticado`**: Autor autenticado como LEITOR
 
 ### Fixtures de Dados
 
-- **`usuario_teste`**: Dados de um usuário CLIENTE de teste
+- **`usuario_teste`**: Dados de um usuário AUTOR de teste
 - **`admin_teste`**: Dados de um usuário ADMIN de teste
-- **`vendedor_teste`**: Dados de um usuário VENDEDOR de teste
+- **`vendedor_teste`**: Dados de um usuário LEITOR de teste
 - **`tarefa_teste`**: Dados de uma tarefa de teste
 - **`foto_teste_base64`**: Imagem PNG válida em base64
 
@@ -153,8 +153,8 @@ def test_login_com_credenciais_validas(self, client, criar_usuario, usuario_test
 - `TestExcluirUsuario`: Exclusão (com proteção de auto-exclusão)
 
 **Segurança:**
-- Cliente não pode acessar áreas de admin
-- Vendedor não pode acessar áreas de admin
+- Autor não pode acessar áreas de admin
+- Leitor não pode acessar áreas de admin
 - Admin não pode excluir a si mesmo
 
 ### 5. Testes de Admin - Configurações (`test_admin_configuracoes.py`)

@@ -19,7 +19,7 @@ class LoginDTO(BaseModel):
 
 
 class CadastroDTO(BaseModel):
-    perfil: str = Field(..., description="Perfil/Role do usuário", examples=["Cliente", "Vendedor"])
+    perfil: str = Field(..., description="Perfil/Role do usuário", examples=["Autor", "Leitor"])
     nome: str = Field(..., description="Nome completo do usuário", min_length=4, max_length=128)
     email: str = Field(..., description="E-mail do usuário", examples=["usuario@exemplo.com"])
     senha: str = Field(..., description="Senha do usuário", min_length=8, max_length=128)
