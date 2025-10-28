@@ -1,0 +1,22 @@
+{
+  "usuarios": [
+    {
+      "nome": "Administrador Padrão",
+      "email": "padrao@administrador.com",
+      "senha": "1234aA@#",
+      "perfil": "Administrador"
+    },
+    {
+      "nome": "Cliente Padrão",
+      "email": "padrao@cliente.com",
+      "senha": "1234aA@#",
+      "perfil": "Cliente"
+    },
+    {
+      "nome": "Vendedor Padrão",
+      "email": "padrao@vendedor.com",
+      "senha": "1234aA@#",
+      "perfil": "Vendedor"
+    }
+  ]
+}

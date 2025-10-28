@@ -1,56 +1,172 @@
-import os
-import logging
-from pathlib import Path
-
+import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.exceptions import RequestValidationError
 from starlette.middleware.sessions import SessionMiddleware
-from dotenv import load_dotenv
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from pathlib import Path
 
-from routes.public import router as public_routes
+# Configurações
+from util.config import APP_NAME, SECRET_KEY, HOST, PORT, RELOAD, VERSION
 
-load_dotenv()
+# Logger
+from util.logger_config import logger
 
-BASE_DIR = Path(__file__).resolve().parent
+# Exception Handlers
+from util.exception_handlers import (
+    http_exception_handler,
+    validation_exception_handler,
+    generic_exception_handler,
+    form_validation_exception_handler,
+)
+from util.exceptions import FormValidationError
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("simpleblog.main")
+# Repositórios
+from repo import usuario_repo, configuracao_repo, tarefa_repo, chamado_repo, chamado_interacao_repo, indices_repo
+from repo import chat_sala_repo, chat_participante_repo, chat_mensagem_repo
 
+# Rotas
+from routes.auth_routes import router as auth_router
+from routes.tarefas_routes import router as tarefas_router
+from routes.chamados_routes import router as chamados_router
+from routes.admin_usuarios_routes import router as admin_usuarios_router
+from routes.admin_configuracoes_routes import router as admin_config_router
+from routes.admin_backups_routes import router as admin_backups_router
+from routes.admin_chamados_routes import router as admin_chamados_router
+from routes.usuario_routes import router as usuario_router
+from routes.chat_routes import router as chat_router
+from routes.public_routes import router as public_router
+from routes.examples_routes import router as examples_router
 
-def create_app() -> FastAPI:
-    app = FastAPI(title="SimpleBlog")
+# Seeds
+from util.seed_data import inicializar_dados
 
-    # SESSION_SECRET: defina em .env para produção
-    session_secret = os.environ.get("SESSION_SECRET") or "change-me-in-production"
-    if session_secret == "change-me-in-production":
-        logger.warning(
-            "SESSION_SECRET está usando o valor padrão. Defina SESSION_SECRET no .env para produção."
+# Criar aplicação FastAPI
+app = FastAPI(title=APP_NAME, version=VERSION)
+
+# Configurar SessionMiddleware
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+
+# Configurar CSRF Protection Middleware
+from util.csrf_protection import CSRFProtectionMiddleware
+app.add_middleware(CSRFProtectionMiddleware)
+logger.info("CSRF Protection habilitado")
+
+# Registrar Exception Handlers
+app.add_exception_handler(StarletteHTTPException, http_exception_handler)  # type: ignore[arg-type]
+app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
+app.add_exception_handler(FormValidationError, form_validation_exception_handler)  # type: ignore[arg-type]
+app.add_exception_handler(Exception, generic_exception_handler)
+logger.info("Exception handlers registrados")
+
+# Montar arquivos estáticos
+static_path = Path("static")
+if static_path.exists():
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+    logger.info("Arquivos estáticos montados em /static")
+
+# Criar tabelas do banco de dados
+logger.info("Criando tabelas do banco de dados...")
+try:
+    usuario_repo.criar_tabela()
+    logger.info("Tabela 'usuario' criada/verificada")
+
+    configuracao_repo.criar_tabela()
+    logger.info("Tabela 'configuracao' criada/verificada")
+
+    tarefa_repo.criar_tabela()
+    logger.info("Tabela 'tarefa' criada/verificada")
+
+    chamado_repo.criar_tabela()
+    logger.info("Tabela 'chamado' criada/verificada")
+
+    chamado_interacao_repo.criar_tabela()
+    logger.info("Tabela 'chamado_interacao' criada/verificada")
+
+    chat_sala_repo.criar_tabela()
+    logger.info("Tabela 'chat_sala' criada/verificada")
+
+    chat_participante_repo.criar_tabela()
+    logger.info("Tabela 'chat_participante' criada/verificada")
+
+    chat_mensagem_repo.criar_tabela()
+    logger.info("Tabela 'chat_mensagem' criada/verificada")
+
+    # Criar índices para otimização de performance
+    indices_repo.criar_indices()
+
+except Exception as e:
+    logger.error(f"Erro ao criar tabelas: {e}")
+    raise
+
+# Inicializar dados seed
+try:
+    inicializar_dados()
+except Exception as e:
+    logger.error(f"Erro ao inicializar dados seed: {e}", exc_info=True)
+
+# Incluir routers
+# IMPORTANTE: public_router deve ser incluído por último para que a rota "/" funcione corretamente
+app.include_router(auth_router, tags=["Autenticação"])
+logger.info("Router de autenticação incluído")
+
+app.include_router(tarefas_router, tags=["Tarefas"])
+logger.info("Router de tarefas incluído")
+
+app.include_router(chamados_router, tags=["Chamados"])
+logger.info("Router de chamados incluído")
+
+app.include_router(admin_usuarios_router, tags=["Admin - Usuários"])
+logger.info("Router admin de usuários incluído")
+
+app.include_router(admin_config_router, tags=["Admin - Configurações"])
+logger.info("Router admin de configurações incluído")
+
+app.include_router(admin_backups_router, tags=["Admin - Backups"])
+logger.info("Router admin de backups incluído")
+
+app.include_router(admin_chamados_router, tags=["Admin - Chamados"])
+logger.info("Router admin de chamados incluído")
+
+app.include_router(usuario_router, tags=["Usuário"])
+logger.info("Router de usuário incluído")
+
+app.include_router(chat_router, tags=["Chat"])
+logger.info("Router de chat incluído")
+
+# Rotas públicas (deve ser por último para não sobrescrever outras rotas)
+app.include_router(public_router, tags=["Público"])
+logger.info("Router público incluído")
+
+# Rotas públicas (deve ser por último para não sobrescrever outras rotas)
+app.include_router(examples_router, tags=["Exemplos"])
+logger.info("Router de exemplos incluído")
+
+@app.get("/health")
+async def health_check():
+    """Endpoint de health check"""
+    return {"status": "healthy"}
+
+if __name__ == "__main__":
+    logger.info("=" * 60)
+    logger.info(f"Iniciando {APP_NAME} v{VERSION}")
+    logger.info("=" * 60)
+
+    logger.info(f"Servidor rodando em http://{HOST}:{PORT}")
+    logger.info(f"Hot reload: {'Ativado' if RELOAD else 'Desativado'}")
+    logger.info(f"Documentação API: http://{HOST}:{PORT}/docs")
+    logger.info("=" * 60)
+
+    try:
+        uvicorn.run(
+            "main:app",
+            host=HOST,
+            port=PORT,
+            reload=RELOAD,
+            log_level="info"
         )
-    app.add_middleware(SessionMiddleware, secret_key=session_secret)
-
-    # Monta static se a pasta existir
-    static_dir = BASE_DIR / "static"
-    if static_dir.is_dir():
-        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
-        logger.info(f"Mounted static directory at: {static_dir}")
-    else:
-        logger.info("Pasta 'static' não encontrada — pulando montagem de arquivos estáticos.")
-
-    # Inclui as rotas públicas
-    app.include_router(public_routes, tags=["Public"])
-
-    @app.get("/health", tags=["Misc"])
-    async def health() -> dict[str, str]:
-        """A simple health check endpoint used for monitoring."""
-        return {"status": "ok"}
-
-    return app
-
-
-app = create_app()
-
-if __name__ == "_main_":
-    import uvicorn
-
-    # Executa com reload em desenvolvimento
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, log_level="info", reload=True)
+    except KeyboardInterrupt:
+        logger.info("Servidor encerrado pelo usuário")
+    except Exception as e:
+        logger.error(f"Erro ao iniciar servidor: {e}")
+        raise
