@@ -80,9 +80,8 @@ async def post_aplicar_tema(
         return RedirectResponse("/admin/tema", status_code=status.HTTP_303_SEE_OTHER)
 
     try:
-        # Obter tema anterior para logging
+        # Obter tema anterior para o log
         config_existente = configuracao_repo.obter_por_chave("theme")
-        tema_anterior = config_existente.valor if config_existente else "nenhum"
 
         # Validar se o tema existe
         css_origem = Path(f"static/css/bootswatch/{tema}.bootstrap.min.css")
@@ -107,6 +106,7 @@ async def post_aplicar_tema(
             # Limpar cache de configurações
             config.limpar()
 
+            tema_anterior = config_existente.valor if config_existente else "nenhum"
             logger.info(
                 f"Tema alterado para '{tema}' por admin {usuario_logado['id']} "
                 f"(anterior: {tema_anterior})"
