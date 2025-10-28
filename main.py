@@ -49,7 +49,7 @@ def create_app() -> FastAPI:
 
 app = create_app()
 
-if __name__ == "__main__":
+if __name__ == "_main_":
     import uvicorn
 
     # Executa com reload em desenvolvimento
