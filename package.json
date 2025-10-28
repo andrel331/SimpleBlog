@@ -16,8 +16,5 @@
   "bugs": {
     "url": "https://github.com/andrel331/SimpleBlog/issues"
   },
-  "homepage": "https://github.com/andrel331/SimpleBlog#readme",
-  "dependencies": {
-    "cypress": "^15.5.0"
-  }
+  "homepage": "https://github.com/andrel331/SimpleBlog#readme"
 }
