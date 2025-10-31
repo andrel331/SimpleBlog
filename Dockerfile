@@ -14,7 +14,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia o restante do código
 COPY . .
 
-# Porta interna onde o Uvicorn escutará
 ENV PORT=8000
 EXPOSE 8000
 
