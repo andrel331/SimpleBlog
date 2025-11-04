@@ -3,6 +3,7 @@ Configurações e fixtures para testes pytest.
 
 Fornece fixtures reutilizáveis e helpers para testes da aplicação.
 """
+
 import pytest
 from fastapi.testclient import TestClient
 from fastapi import status
@@ -12,23 +13,24 @@ from pathlib import Path
 from typing import Optional
 from util.perfis import Perfil
 
+
 # Configurar banco de dados de teste ANTES de importar a aplicação
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_database():
     """Configura banco de dados de teste em memória para toda a sessão"""
     # Criar arquivo temporário para o banco de testes
-    test_db = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.db')
+    test_db = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".db")
     test_db_path = test_db.name
     test_db.close()
 
     # Configurar variável de ambiente para usar DB de teste
-    os.environ['DATABASE_PATH'] = test_db_path
+    os.environ["DATABASE_PATH"] = test_db_path
 
     # Desabilitar envio de e-mails durante testes
-    os.environ['RESEND_API_KEY'] = ''
+    os.environ["RESEND_API_KEY"] = ""
 
     # Configurar nível de log para testes
-    os.environ['LOG_LEVEL'] = 'ERROR'
+    os.environ["LOG_LEVEL"] = "ERROR"
 
     yield test_db_path
 
@@ -43,7 +45,11 @@ def setup_test_database():
 def limpar_rate_limiter():
     """Limpa o rate limiter antes de cada teste para evitar bloqueios"""
     # Importar após configuração do banco de dados
-    from routes.auth_routes import login_limiter, cadastro_limiter, esqueci_senha_limiter
+    from routes.auth_routes import (
+        login_limiter,
+        cadastro_limiter,
+        esqueci_senha_limiter,
+    )
     from routes.admin_usuarios_routes import admin_usuarios_limiter
     from routes.admin_backups_routes import admin_backups_limiter
     from routes.admin_configuracoes_routes import admin_config_limiter
@@ -86,16 +92,16 @@ def limpar_banco_dados():
             tabelas_existentes = [row[0] for row in cursor.fetchall()]
 
             # Limpar apenas tabelas que existem (respeitando foreign keys)
-            if 'tarefa' in tabelas_existentes:
+            if "tarefa" in tabelas_existentes:
                 cursor.execute("DELETE FROM tarefa")
             # Limpar chamado_interacao antes de chamado (devido à FK)
-            if 'chamado_interacao' in tabelas_existentes:
+            if "chamado_interacao" in tabelas_existentes:
                 cursor.execute("DELETE FROM chamado_interacao")
-            if 'chamado' in tabelas_existentes:
+            if "chamado" in tabelas_existentes:
                 cursor.execute("DELETE FROM chamado")
-            if 'usuario' in tabelas_existentes:
+            if "usuario" in tabelas_existentes:
                 cursor.execute("DELETE FROM usuario")
-            if 'configuracao' in tabelas_existentes:
+            if "configuracao" in tabelas_existentes:
                 cursor.execute("DELETE FROM configuracao")
 
             # Resetar autoincrement (limpar sqlite_sequence se existir)
@@ -137,7 +143,7 @@ def usuario_teste():
         "nome": "Usuario Teste",
         "email": "teste@example.com",
         "senha": "Senha@123",
-        "perfil": Perfil.AUTOR.value  # Usa Enum Perfil
+        "perfil": Perfil.AUTOR.value,  # Usa Enum Perfil
     }
 
 
@@ -148,7 +154,7 @@ def admin_teste():
         "nome": "Admin Teste",
         "email": "admin@example.com",
         "senha": "Admin@123",
-        "perfil": Perfil.ADMIN.value  # Usa Enum Perfil
+        "perfil": Perfil.ADMIN.value,  # Usa Enum Perfil
     }
 
 
@@ -158,15 +164,22 @@ def criar_usuario(client):
     Fixture que retorna uma função para criar usuários
     Útil para criar múltiplos usuários em um teste
     """
-    def _criar_usuario(nome: str, email: str, senha: str, perfil: str = Perfil.AUTOR.value):
+
+    def _criar_usuario(
+        nome: str, email: str, senha: str, perfil: str = Perfil.AUTOR.value
+    ):
         """Cadastra um usuário via endpoint de cadastro"""
-        response = client.post("/cadastrar", data={
-            "perfil": perfil,
-            "nome": nome,
-            "email": email,
-            "senha": senha,
-            "confirmar_senha": senha
-        }, follow_redirects=False)
+        response = client.post(
+            "/cadastrar",
+            data={
+                "perfil": perfil,
+                "nome": nome,
+                "email": email,
+                "senha": senha,
+                "confirmar_senha": senha,
+            },
+            follow_redirects=False,
+        )
         return response
 
     return _criar_usuario
@@ -178,12 +191,12 @@ def fazer_login(client):
     Fixture que retorna uma função para fazer login
     Retorna o autor já autenticado
     """
+
     def _fazer_login(email: str, senha: str):
         """Faz login e retorna o autor autenticado"""
-        response = client.post("/login", data={
-            "email": email,
-            "senha": senha
-        }, follow_redirects=False)
+        response = client.post(
+            "/login", data={"email": email, "senha": senha}, follow_redirects=False
+        )
         return response
 
     return _fazer_login
@@ -196,11 +209,7 @@ def cliente_autenticado(client, criar_usuario, fazer_login, usuario_teste):
     Cria um usuário e faz login automaticamente
     """
     # Criar usuário
-    criar_usuario(
-        usuario_teste["nome"],
-        usuario_teste["email"],
-        usuario_teste["senha"]
-    )
+    criar_usuario(usuario_teste["nome"], usuario_teste["email"], usuario_teste["senha"])
 
     # Fazer login
     fazer_login(usuario_teste["email"], usuario_teste["senha"])
@@ -225,7 +234,7 @@ def admin_autenticado(client, criar_usuario, fazer_login, admin_teste):
         nome=admin_teste["nome"],
         email=admin_teste["email"],
         senha=criar_hash_senha(admin_teste["senha"]),
-        perfil=Perfil.ADMIN.value  # Usa Enum Perfil
+        perfil=Perfil.ADMIN.value,  # Usa Enum Perfil
     )
     usuario_repo.inserir(admin)
 
@@ -239,10 +248,7 @@ def admin_autenticado(client, criar_usuario, fazer_login, admin_teste):
 @pytest.fixture
 def tarefa_teste():
     """Dados de uma tarefa de teste"""
-    return {
-        "titulo": "Tarefa de Teste",
-        "descricao": "Descrição da tarefa de teste"
-    }
+    return {"titulo": "Tarefa de Teste", "descricao": "Descrição da tarefa de teste"}
 
 
 @pytest.fixture
@@ -251,30 +257,32 @@ def criar_tarefa(cliente_autenticado):
     Fixture que retorna uma função para criar tarefas
     Requer autor autenticado
     """
+
     def _criar_tarefa(titulo: str, descricao: str = ""):
         """Cria uma tarefa via endpoint"""
-        response = cliente_autenticado.post("/tarefas/cadastrar", data={
-            "titulo": titulo,
-            "descricao": descricao
-        }, follow_redirects=False)
+        response = cliente_autenticado.post(
+            "/tarefas/cadastrar",
+            data={"titulo": titulo, "descricao": descricao},
+            follow_redirects=False,
+        )
         return response
 
     return _criar_tarefa
 
 
 @pytest.fixture
-def vendedor_teste():
+def leitor_teste():
     """Dados de um leitor de teste"""
     return {
         "nome": "Leitor Teste",
         "email": "leitor@example.com",
         "senha": "Leitor@123",
-        "perfil": Perfil.LEITOR.value
+        "perfil": Perfil.LEITOR.value,
     }
 
 
 @pytest.fixture
-def vendedor_autenticado(client, criar_usuario, fazer_login, vendedor_teste):
+def leitor_autenticado(client, criar_usuario, fazer_login, leitor_teste):
     """
     Fixture que retorna um autor autenticado como leitor
     """
@@ -286,15 +294,15 @@ def vendedor_autenticado(client, criar_usuario, fazer_login, vendedor_teste):
     # Criar leitor diretamente no banco
     leitor = Usuario(
         id=0,
-        nome=vendedor_teste["nome"],
-        email=vendedor_teste["email"],
-        senha=criar_hash_senha(vendedor_teste["senha"]),
-        perfil=Perfil.LEITOR.value
+        nome=leitor_teste["nome"],
+        email=leitor_teste["email"],
+        senha=criar_hash_senha(leitor_teste["senha"]),
+        perfil=Perfil.LEITOR.value,
     )
     usuario_repo.inserir(leitor)
 
     # Fazer login
-    fazer_login(vendedor_teste["email"], vendedor_teste["senha"])
+    fazer_login(leitor_teste["email"], leitor_teste["senha"])
 
     # Retornar autor autenticado
     return client
@@ -315,9 +323,11 @@ def criar_backup():
     """
     Fixture que retorna uma função para criar backup de teste
     """
+
     def _criar_backup():
         """Cria um backup via util/backup_util"""
         from util import backup_util
+
         sucesso, mensagem = backup_util.criar_backup()
         return sucesso, mensagem
 
@@ -325,6 +335,7 @@ def criar_backup():
 
 
 # ===== TEST HELPERS - Funções auxiliares para assertions =====
+
 
 def assert_permission_denied(response, expected_redirect: str = "/login"):
     """
@@ -344,7 +355,9 @@ def assert_permission_denied(response, expected_redirect: str = "/login"):
     assert response.headers["location"] == expected_redirect
 
 
-def assert_redirects_to(response, expected_url: str, expected_status: int = status.HTTP_303_SEE_OTHER):
+def assert_redirects_to(
+    response, expected_url: str, expected_status: int = status.HTTP_303_SEE_OTHER
+):
     """
     Helper para verificar redirecionamento.
 
@@ -383,6 +396,7 @@ def assert_contains_text(response, text: str, case_sensitive: bool = False):
 
 # ===== FIXTURES AVANÇADAS =====
 
+
 @pytest.fixture
 def dois_usuarios(client, criar_usuario):
     """
@@ -397,13 +411,13 @@ def dois_usuarios(client, criar_usuario):
         "nome": "Usuario Um",
         "email": "usuario1@example.com",
         "senha": "Senha@123",
-        "perfil": Perfil.AUTOR.value
+        "perfil": Perfil.AUTOR.value,
     }
     usuario2 = {
         "nome": "Usuario Dois",
         "email": "usuario2@example.com",
         "senha": "Senha@456",
-        "perfil": Perfil.AUTOR.value
+        "perfil": Perfil.AUTOR.value,
     }
 
     # Criar ambos usuários
@@ -425,7 +439,7 @@ def usuario_com_foto(cliente_autenticado, foto_teste_base64):
     response = cliente_autenticado.post(
         "/perfil/foto/atualizar",
         json={"imagem": foto_teste_base64},
-        follow_redirects=False
+        follow_redirects=False,
     )
 
     # Verificar se foto foi salva com sucesso
@@ -442,6 +456,7 @@ def obter_ultimo_backup():
     Returns:
         Função que retorna dict com dados do último backup ou None
     """
+
     def _obter_ultimo_backup() -> Optional[dict]:
         """Obtém informações do último backup na pasta backups/"""
         from util import backup_util
