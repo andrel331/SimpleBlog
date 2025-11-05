@@ -303,7 +303,6 @@ from util.foto_util import (
 
 # No template
 <img src="{{ obter_caminho_foto_usuario(usuario.id) }}" alt="Foto">
-
 # Criar foto padrão para novo usuário
 criar_foto_padrao_usuario(usuario_id)
 
