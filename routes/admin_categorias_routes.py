@@ -12,12 +12,12 @@ from model.categoria_model import Categoria
 from repo import categoria_repo
 
 # Utilitários
-from util.auth_util import requer_autenticacao
-from util.mensagens_util import informar_sucesso, informar_erro
+from util.auth_util import requer_autenticacao # pyright: ignore[reportMissingImports]
+from util.mensagens_util import informar_sucesso, informar_erro # pyright: ignore[reportMissingImports]
 from util.rate_limiter import RateLimiter
-from util.cliente_util import obter_identificador_cliente
+from util.cliente_util import obter_identificador_cliente # pyright: ignore[reportMissingImports]
 from util.exceptions import FormValidationError
-from model.perfil_model import Perfil
+from model.perfil_model import Perfil # pyright: ignore[reportMissingImports]
 
 # ----------------------------------------------------------------------
 # Configurações do router e dos templates

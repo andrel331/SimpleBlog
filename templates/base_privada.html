@@ -22,7 +22,11 @@
     {% block head %}{% endblock %}
 </head>
 
-<body class="d-flex flex-column min-vh-100">
+{# Inserimos o data-attribute no body em vez de injetar JS - evita erros de parser/editor #}
+<body class="d-flex flex-column min-vh-100"
+      {% if request.session.get('usuario_logado') %}
+          data-usuario-id="{{ request.session.get('usuario_logado')['id'] | e }}"
+      {% endif %}>
     {#----------------------------------------------------------
        NAVBAR
        ---------------------------------------------------------- #}
@@ -98,7 +102,7 @@
         </div>
     </nav>
 
-    <!-- Container para Toasts (bottom‑right) -->
+    <!-- Container para Toasts (bottom-right) -->
     <div id="toast-container"
          class="toast-container position-fixed bottom-0 end-0 p-4 toast-offset">
     </div>
@@ -140,14 +144,16 @@
     <script src="/static/js/input-mask.js"></script>
     <script src="/static/js/chat-widget.js" defer></script>
 
+    <!-- Script de inicialização -->
     <script>
-        // Guardar ID do usuário logado no body para o chat
-        {% if request.session.get('usuario_logado') %}
-            document.body.dataset.usuarioId = {{ request.session.get('usuario_logado')['id'] }};
-        {% endif %}
+        // Nota: o ID do usuário agora está disponível em document.body.dataset.usuarioId
+        // (definido no atributo data-usuario-id do <body>) — evita injeção direta de Jinja no JS.
 
-        // Inicializar chat quando o DOM estiver pronto
         document.addEventListener('DOMContentLoaded', () => {
+            // Exemplo opcional de leitura do atributo (pode ser usado pelo chatWidget internamente):
+            // const usuarioId = document.body.dataset.usuarioId || null;
+            // console.log('usuarioId:', usuarioId);
+
             if (typeof chatWidget !== 'undefined') {
                 chatWidget.init();
             }

@@ -1,134 +1,40 @@
-{% extends "base_privada.html" %}
-
-{% block titulo %}Categorias{% endblock %}
-
-{% block content %}
-
-<h1 class="mb-4">Gerenciar Categorias</h1>
-
-<a href="/admin/categorias/cadastrar" class="btn btn-primary mb-3">
-    <i class="bi bi-plus-lg"></i> Nova Categoria
-</a>
-
-{% if categorias %}
-<div class="table-responsive">
-    <table class="table table-striped table-hover align-middle">
-        <thead class="table-dark">
-            <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>Descrição</th>
-                <th>Data Cadastro</th>
-                <th class="text-center">Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for categoria in categorias %}
-            <tr>
-                <td>{{ categoria.id }}</td>
-                <td><strong>{{ categoria.nome }}</strong></td>
-                <td>{{ categoria.descricao | default('-') }}</td>
-                <td>
-                    {% if categoria.data_cadastro %}
-                        {{ categoria.data_cadastro.strftime('%d/%m/%Y %H:%M') }}
-                    {% else %}
-                        -
-                    {% endif %}
-                </td>
-                <td class="text-center">
-                    <a href="/admin/categorias/editar/{{ categoria.id }}"
-                       class="btn btn-sm btn-warning"
-                       title="Editar">
-                        <i class="bi bi-pencil"></i>
-                    </a>
-
-                    {# Serializamos os valores para evitar problemas de aspas no JS #}
-                    <button type="button"
-                            class="btn btn-sm btn-danger"
-                            title="Excluir"
-                            onclick="excluirCategoria(
-                                {{ categoria.id }},
-                                {{ categoria.nome|tojson }},
-                                {{ (categoria.descricao or '')|tojson }}
-                            )">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-{% else %}
-<div class="alert alert-info">
-    <i class="bi bi-info-circle"></i>
-    Nenhuma categoria cadastrada ainda.
-    <a href="/admin/categorias/cadastrar" class="alert-link">Cadastre a primeira categoria</a>.
-</div>
-{% endif %}
-
-{# ---------- Modal de Confirmação ---------- #}
-<div class="modal fade" id="modalConfirmDelete" tabindex="-1" aria-labelledby="modalConfirmDeleteLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="modalConfirmDeleteLabel">Confirmar Exclusão</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-            </div>
-
-            <div class="modal-body">
-                <p id="textoConfirmacao"></p>
-            </div>
-
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-danger" id="btnConfirmarExclusao">Confirmar Exclusão</button>
-            </div>
-
-        </div>
-    </div>
-</div>
-
-{% endblock %}
-
-{% block scripts %}
 <script>
 /**
- * Prepara e abre o modal de confirmação.
- *
- * @param {Number} id          – ID da categoria a ser excluída
- * @param {String} nome        – Nome da categoria (já escapado via tojson)
- * @param {String} descricao   – Descrição da categoria (já escapado via tojson)
+ * Lida com o clique no botão de exclusão.
+ * Usa os atributos data-* definidos no HTML.
  */
-function excluirCategoria(id, nome, descricao) {
+document.addEventListener('click', function (event) {
+    const btn = event.target.closest('.btn-excluir');
+    if (!btn) return;
+
+    const id = btn.dataset.id;
+    const nome = btn.dataset.nome;
+    const descricao = btn.dataset.descricao;
+
     const texto = `
         <strong>${nome}</strong> será removida permanentemente.<br>
         <em>Descrição:</em> ${descricao ? descricao : '-'}
     `;
     document.getElementById('textoConfirmacao').innerHTML = texto;
 
-    // Armazena o ID em um atributo data‑* para usar na confirmação
     const btnConfirmar = document.getElementById('btnConfirmarExclusao');
     btnConfirmar.dataset.categoriaId = id;
 
-    // Abre o modal (Bootstrap 5)
     const modal = new bootstrap.Modal(document.getElementById('modalConfirmDelete'));
     modal.show();
-}
+});
 
 /**
- * Executa a requisição de exclusão quando o usuário confirma.
+ * Executa a exclusão quando o usuário confirma.
  */
 document.getElementById('btnConfirmarExclusao').addEventListener('click', function () {
     const id = this.dataset.categoriaId;
     if (!id) return;
 
-    // Exemplo simples usando fetch; ajuste a URL conforme sua rota.
     fetch(`/admin/categorias/excluir/${id}`, {
         method: 'POST',
         headers: {
-            'X-CSRFToken': '{{ csrf_token() }}'   /* caso esteja usando CSRF */
+            'X-CSRFToken': '{{ csrf_token() }}'  // opcional, se você usa CSRF
         }
     })
     .then(res => {
@@ -138,4 +44,3 @@ document.getElementById('btnConfirmarExclusao').addEventListener('click', functi
     .catch(err => alert('Erro ao excluir a categoria: ' + err));
 });
 </script>
-{% endblock %}
