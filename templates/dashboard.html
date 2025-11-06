@@ -39,6 +39,29 @@
 
     <!-- Configurações (apenas para admin) -->
     {% if usuario.perfil == 'Administrador' %}
+    <!-- Chamados -->
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm shadow-hover">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="bi bi-headset text-danger display-3"></i>
+                </div>
+                <h5 class="card-title">Chamados</h5>
+                <p class="card-text text-muted">
+                    Gerencie chamados de suporte dos usuários
+                </p>
+                {% if chamados_pendentes > 0 %}
+                <div class="mb-3">
+                    <span class="badge bg-danger">{{ chamados_pendentes }} pendente(s)</span>
+                </div>
+                {% endif %}
+                <a href="/admin/chamados/listar" class="btn btn-danger">
+                    <i class="bi bi-arrow-right-circle"></i> Acessar
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- Usuários -->
     <div class="col-md-4">
         <div class="card h-100 shadow-sm shadow-hover">
@@ -57,23 +80,43 @@
         </div>
     </div>
 
+    <!-- Categorias -->
     <div class="col-md-4">
         <div class="card h-100 shadow-sm shadow-hover">
             <div class="card-body text-center">
                 <div class="mb-3">
-                    <i class="bi bi-palette text-danger display-3"></i>
+                    <i class="bi bi-folder text-primary display-3"></i>
                 </div>
-                <h5 class="card-title">Personalizar Tema</h5>
+                <h5 class="card-title">Categorias</h5>
                 <p class="card-text text-muted">
-                    Escolha entre diversos temas visuais para personalizar a aplicação
+                    Organize o conteúdo através de categorias
                 </p>
-                <a href="/admin/tema" class="btn btn-danger">
+                <a href="/admin/categorias/listar" class="btn btn-primary">
                     <i class="bi bi-arrow-right-circle"></i> Acessar
                 </a>
             </div>
         </div>
     </div>
 
+    <!-- Tema -->
+    <div class="col-md-4">
+        <div class="card h-100 shadow-sm shadow-hover">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="bi bi-palette text-secondary display-3"></i>
+                </div>
+                <h5 class="card-title">Personalizar Tema</h5>
+                <p class="card-text text-muted">
+                    Escolha entre diversos temas visuais para personalizar a aplicação
+                </p>
+                <a href="/admin/tema" class="btn btn-secondary">
+                    <i class="bi bi-arrow-right-circle"></i> Acessar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auditoria -->
     <div class="col-md-4">
         <div class="card h-100 shadow-sm shadow-hover">
             <div class="card-body text-center">
@@ -91,39 +134,18 @@
         </div>
     </div>
 
+    <!-- Backup -->
     <div class="col-md-4">
         <div class="card h-100 shadow-sm shadow-hover">
             <div class="card-body text-center">
                 <div class="mb-3">
-                    <i class="bi bi-database text-info display-3"></i>
+                    <i class="bi bi-server text-info display-3"></i>
                 </div>
                 <h5 class="card-title">Backup do Banco</h5>
                 <p class="card-text text-muted">
                     Crie, gerencie e restaure backups do banco de dados
                 </p>
                 <a href="/admin/backups/listar" class="btn btn-info">
-                    <i class="bi bi-arrow-right-circle"></i> Acessar
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card h-100 shadow-sm shadow-hover">
-            <div class="card-body text-center">
-                <div class="mb-3">
-                    <i class="bi bi-headset text-danger display-3"></i>
-                </div>
-                <h5 class="card-title">Chamados</h5>
-                <p class="card-text text-muted">
-                    Gerencie chamados de suporte dos usuários
-                </p>
-                {% if chamados_pendentes > 0 %}
-                <div class="mb-3">
-                    <span class="badge bg-danger">{{ chamados_pendentes }} pendente(s)</span>
-                </div>
-                {% endif %}
-                <a href="/admin/chamados/listar" class="btn btn-danger">
                     <i class="bi bi-arrow-right-circle"></i> Acessar
                 </a>
             </div>

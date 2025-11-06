@@ -16,10 +16,11 @@
 12. [Passo 9: Criar o Template de Cadastro](#passo-9-criar-o-template-de-cadastro)
 13. [Passo 10: Criar o Template de Edição](#passo-10-criar-o-template-de-edição)
 14. [Passo 11: Adicionar Link no Menu](#passo-11-adicionar-link-no-menu)
-15. [Passo 12: Testar o CRUD Completo](#passo-12-testar-o-crud-completo)
-16. [Padrões e Boas Práticas](#padrões-e-boas-práticas)
-17. [Troubleshooting](#troubleshooting)
-18. [Exercícios Propostos](#exercícios-propostos)
+15. [Passo 12: Adicionar Card no Dashboard](#passo-12-adicionar-card-no-dashboard)
+16. [Passo 13: Testar o CRUD Completo](#passo-13-testar-o-crud-completo)
+17. [Padrões e Boas Práticas](#padrões-e-boas-práticas)
+18. [Troubleshooting](#troubleshooting)
+19. [Exercícios Propostos](#exercícios-propostos)
 
 ---
 
@@ -2871,7 +2872,150 @@ Procure a seção do menu de administração. Deve haver algo como:
 
 ---
 
-## Passo 12: Testar o CRUD Completo
+## Passo 12: Adicionar Card no Dashboard
+
+### Objetivo
+
+Adicionar um card de acesso rápido ao CRUD de Categorias na página inicial (dashboard) do administrador.
+
+### Por que fazer isso?
+
+O dashboard é a página inicial que o administrador vê ao fazer login. Ter um card de acesso facilita a navegação e torna a interface mais intuitiva e profissional.
+
+### ⚠️ Importante: Ordem dos Cards
+
+Os cards no dashboard **DEVEM** seguir a mesma ordem dos itens no menu de navegação em `base_privada.html`. Isso mantém consistência na interface e facilita a navegação do usuário.
+
+**Ordem do menu de administração:**
+1. Dashboard
+2. Perfil
+3. **Chamados**
+4. **Usuários**
+5. **Categorias** ← Nosso novo módulo
+6. **Tema**
+7. **Auditoria**
+8. **Backup**
+
+### Arquivo a Modificar
+
+📁 `templates/dashboard.html`
+
+### Mudanças a Fazer
+
+Procure a seção de cards do administrador (após o card "Usuários"). A estrutura dos cards deve seguir essa ordem:
+
+1. **Chamados** (já existe)
+2. **Usuários** (já existe)
+3. **Categorias** ← Adicionar este
+4. **Tema** (já existe)
+5. **Auditoria** (já existe)
+6. **Backup** (já existe)
+
+#### Código a Adicionar
+
+Adicione o card de Categorias **entre o card de Usuários e o card de Tema**:
+
+```html
+<!-- Categorias -->
+<div class="col-md-4">
+    <div class="card h-100 shadow-sm shadow-hover">
+        <div class="card-body text-center">
+            <div class="mb-3">
+                <i class="bi bi-folder text-primary display-3"></i>
+            </div>
+            <h5 class="card-title">Categorias</h5>
+            <p class="card-text text-muted">
+                Organize o conteúdo através de categorias
+            </p>
+            <a href="/admin/categorias/listar" class="btn btn-primary">
+                <i class="bi bi-arrow-right-circle"></i> Acessar
+            </a>
+        </div>
+    </div>
+</div>
+```
+
+### Explicação Detalhada
+
+#### Estrutura do Card
+
+```html
+<div class="col-md-4">
+```
+- Bootstrap grid: cada card ocupa 4 colunas (3 cards por linha em telas médias/grandes)
+
+```html
+<div class="card h-100 shadow-sm shadow-hover">
+```
+- `h-100`: Altura 100% para todos os cards ficarem alinhados
+- `shadow-sm`: Sombra suave
+- `shadow-hover`: Classe customizada para efeito hover
+
+```html
+<i class="bi bi-folder text-primary display-3"></i>
+```
+- `bi bi-folder`: Ícone de pasta (mesmo usado no menu)
+- `text-primary`: Cor azul primária do Bootstrap
+- `display-3`: Tamanho grande do ícone
+
+```html
+<a href="/admin/categorias/listar" class="btn btn-primary">
+```
+- Botão com cor primária (azul) que leva à listagem de categorias
+
+#### Escolha de Cores
+
+Cada módulo usa uma cor específica para identificação visual:
+
+| Módulo | Cor | Classe Bootstrap | Uso |
+|--------|-----|------------------|-----|
+| Chamados | Vermelho | `text-danger`, `btn-danger` | Urgência/Atenção |
+| Usuários | Verde | `text-success`, `btn-success` | Ação positiva |
+| **Categorias** | **Azul** | **`text-primary`, `btn-primary`** | **Organização** |
+| Tema | Cinza | `text-secondary`, `btn-secondary` | Personalização |
+| Auditoria | Amarelo | `text-warning`, `btn-warning` | Monitoramento |
+| Backup | Azul claro | `text-info`, `btn-info` | Informação/Segurança |
+
+### Consistência de Ícones
+
+**Regra importante**: O ícone usado no card DEVE ser o mesmo usado no menu de navegação.
+
+No nosso caso:
+- **Menu** (`base_privada.html`): `<i class="bi bi-folder"></i>`
+- **Card** (`dashboard.html`): `<i class="bi bi-folder text-primary display-3"></i>`
+
+Ambos usam `bi-folder` ✅
+
+### ✅ Checkpoint
+
+1. Salve o arquivo `dashboard.html`
+2. Recarregue a página do dashboard (não precisa reiniciar o servidor)
+3. Entre como administrador
+4. Verifique que os cards estão na ordem:
+   - Meu Perfil
+   - Chamados
+   - Usuários
+   - **Categorias** ← Novo!
+   - Tema
+   - Auditoria
+   - Backup
+5. Clique no card "Categorias"
+6. **Esperado**: Redireciona para `/admin/categorias/listar`
+
+### Dica de Manutenção
+
+Sempre que adicionar um novo módulo administrativo:
+
+1. ✅ Adicione item no **menu** (`base_privada.html`)
+2. ✅ Adicione **card no dashboard** (`dashboard.html`)
+3. ✅ Mantenha a **mesma ordem** em ambos
+4. ✅ Use o **mesmo ícone** em ambos
+
+Isso garante uma interface consistente e profissional!
+
+---
+
+## Passo 13: Testar o CRUD Completo
 
 ### Objetivo
 
