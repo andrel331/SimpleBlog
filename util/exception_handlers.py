@@ -14,7 +14,7 @@ import traceback
 templates = criar_templates("templates")
 
 
-async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> Response:
+async def http_exception_handler(request: Request, exc: Exception) -> Response:
     """
     Handler para exceções HTTP do Starlette/FastAPI
 
@@ -23,6 +23,12 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
     - 404 (Not Found): Exibe página de erro 404
     - Outros: Loga e retorna página de erro genérica
     """
+    # Type narrowing: garantir que é uma StarletteHTTPException
+    if not isinstance(exc, StarletteHTTPException):
+        # Fallback para exceções genéricas (não deveria acontecer neste handler)
+        logger.error(f"http_exception_handler recebeu exceção não-HTTP: {type(exc).__name__}")
+        raise exc
+
     status_code = exc.status_code
 
     # Extensões de arquivos estáticos opcionais que não devem gerar warnings
@@ -91,11 +97,16 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
     )
 
 
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> Response:
+async def validation_exception_handler(request: Request, exc: Exception) -> Response:
     """
     Handler para erros de validação do Pydantic
     Loga o erro e exibe mensagem amigável
     """
+    # Type narrowing: garantir que é uma RequestValidationError
+    if not isinstance(exc, RequestValidationError):
+        logger.error(f"validation_exception_handler recebeu exceção inesperada: {type(exc).__name__}")
+        raise exc
+
     logger.warning(
         f"Erro de validação: {exc.errors()} - "
         f"Path: {request.url.path} - "
@@ -185,7 +196,7 @@ async def generic_exception_handler(request: Request, exc: Exception) -> Respons
     )
 
 
-async def form_validation_exception_handler(request: Request, exc: FormValidationError) -> Response:
+async def form_validation_exception_handler(request: Request, exc: Exception) -> Response:
     """
     Handler centralizado para erros de validação de formulários DTO.
 
@@ -215,6 +226,11 @@ async def form_validation_exception_handler(request: Request, exc: FormValidatio
         >>> except ValidationError as e:
         ...     raise FormValidationError(e, "auth/login.html", dados, "senha")
     """
+    # Type narrowing: garantir que é uma FormValidationError
+    if not isinstance(exc, FormValidationError):
+        logger.error(f"form_validation_exception_handler recebeu exceção inesperada: {type(exc).__name__}")
+        raise exc
+
     # Processar erros de validação
     erros = processar_erros_validacao(
         exc.validation_error, campo_padrao=exc.campo_padrao

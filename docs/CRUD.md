@@ -471,7 +471,7 @@ id: Optional[int] = None
 ```
 
 - `Optional[int]`: Pode ser um número inteiro OU `None`
-- `= None`: Valor padrão é `None` (útil ao criar nova categoria sem ID)
+- `= None`: Valor padrão é `None` (útil ao criar nova categoria sem ID, pois ID será gerado pelo BD)
 
 ```python
 nome: str = ""
@@ -496,15 +496,8 @@ nova_categoria = Categoria(
     descricao="Notícias esportivas"
 )
 print(nova_categoria.id)  # None (ainda não tem ID)
-
-# Categoria vinda do banco de dados
-categoria_do_bd = Categoria(
-    id=5,
-    nome="Tecnologia",
-    descricao="Artigos tech",
-    data_cadastro=datetime.now()
-)
-print(categoria_do_bd.nome)  # "Tecnologia"
+nova_categoria_bd = categoria_repo.inserir(nova_categoria) # Salva no BD e retorna com ID
+print(nova_categoria_bd.id)  # Mostra o ID gerado pelo BD
 ```
 
 ### ✅ Checkpoint
@@ -1205,34 +1198,42 @@ Vamos adicionar **3 linhas** no arquivo `main.py`:
 Procure a seção de imports dos repositories (deve estar perto de `from repo import usuario_repo`):
 
 ```python
-from repo import usuario_repo, artigo_repo, comentario_repo
+from repo import usuario_repo, comentario_repo
 ```
 
 **Adicione** `categoria_repo`:
 
 ```python
-from repo import usuario_repo, artigo_repo, comentario_repo, categoria_repo
+from repo import usuario_repo, comentario_repo, categoria_repo
 ```
 
 #### 2. Criar a Tabela (dentro da função que cria tabelas)
 
-Procure a função que cria as tabelas (geralmente chamada `criar_tabelas()` ou similar):
+Procure a função que cria as tabelas (na seção "Banco de dados e seeds"):
 
 ```python
-def criar_tabelas():
-    usuario_repo.criar_tabela()
-    artigo_repo.criar_tabela()
-    comentario_repo.criar_tabela()
+    # ------------------------------------------------------------
+    # Banco de dados e seeds
+    # ------------------------------------------------------------
+    try:
+        logger.info("🛠️ Criando/verificando tabelas do banco de dados...")
+        usuario_repo.criar_tabela()
+        ...
+        indices_repo.criar_indices()
 ```
 
 **Adicione** a criação da tabela de categorias:
 
 ```python
-def criar_tabelas():
-    usuario_repo.criar_tabela()
-    artigo_repo.criar_tabela()
-    comentario_repo.criar_tabela()
-    categoria_repo.criar_tabela()  # ← ADICIONE ESTA LINHA
+    # ------------------------------------------------------------
+    # Banco de dados e seeds
+    # ------------------------------------------------------------
+    try:
+        logger.info("🛠️ Criando/verificando tabelas do banco de dados...")
+        usuario_repo.criar_tabela()
+        ...
+        indices_repo.criar_indices()
+        categoria_repo.criar_tabela()  # ← ADICIONE ESTA LINHA
 ```
 
 ### Explicação
@@ -1349,23 +1350,23 @@ admin_categorias_limiter = RateLimiter(...)
 from typing import Optional
 from fastapi import APIRouter, Request, Form, status
 from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
+from pydantic import ValidationError
 
 from dtos.categoria_dto import CriarCategoriaDTO, AlterarCategoriaDTO
 from model.categoria_model import Categoria
 from repo import categoria_repo
-from util.auth_util import requer_autenticacao
-from util.mensagens_util import informar_sucesso, informar_erro
-from util.rate_limiter import RateLimiter
-from util.cliente_util import obter_identificador_cliente
+from util.auth_decorator import requer_autenticacao
+from util.flash_messages import informar_sucesso, informar_erro
+from util.rate_limiter import RateLimiter, obter_identificador_cliente
 from util.exceptions import FormValidationError
-from model.perfil_model import Perfil
+from util.perfis import Perfil
+from util.template_util import criar_templates
 
 # Configura o roteador com prefixo /admin/categorias
 router = APIRouter(prefix="/admin/categorias")
 
-# Configura os templates HTML
-templates = Jinja2Templates(directory="templates")
+# Configura os templates HTML com as funções globais necessárias (csrf_input, etc.)
+templates = criar_templates("templates")
 
 # Rate Limiter: máximo 10 operações por minuto
 admin_categorias_limiter = RateLimiter(
@@ -1487,7 +1488,7 @@ async def post_cadastrar(
                 status_code=status.HTTP_303_SEE_OTHER
             )
 
-    except Exception as e:
+    except ValidationError as e:
         # Em caso de erro de validação, levanta exception
         # que será capturada pelo handler global
         raise FormValidationError(
@@ -1650,7 +1651,7 @@ async def post_editar(
                 status_code=status.HTTP_303_SEE_OTHER
             )
 
-    except Exception as e:
+    except ValidationError as e:
         raise FormValidationError(
             validation_error=e,
             template_path="admin/categorias/editar.html",
@@ -1828,7 +1829,7 @@ uvicorn main:app --reload
 3. Acesse no navegador (deve dar erro 404 de template, mas a rota existe):
 
 ```
-http://localhost:8000/admin/categorias/listar
+http://localhost:8406/admin/categorias/listar
 ```
 
 Se aparecer erro "Template not found", está correto! Vamos criar os templates nos próximos passos.
@@ -1849,14 +1850,7 @@ Fazer o FastAPI reconhecer e usar as routes de categorias.
 
 #### 1. Importar o Router
 
-Procure a seção de imports dos routers:
-
-```python
-from routes.admin_artigos_routes import router as admin_artigos_router
-from routes.admin_usuarios_routes import router as admin_usuarios_router
-```
-
-**Adicione**:
+Procure a seção de imports dos routers e adicione:
 
 ```python
 from routes.admin_categorias_routes import router as admin_categorias_router
@@ -1864,27 +1858,23 @@ from routes.admin_categorias_routes import router as admin_categorias_router
 
 #### 2. Registrar o Router
 
-Procure onde os routers são registrados:
+Procure a seção onde os routers são registrados e adicone a linha indicada
 
 ```python
-app.include_router(admin_artigos_router, tags=["Admin - Artigos"])
-app.include_router(admin_usuarios_router, tags=["Admin - Usuários"])
-```
-
-**Adicione**:
-
-```python
-app.include_router(admin_categorias_router, tags=["Admin - Categorias"])
+    # ------------------------------------------------------------
+    # Registro das rotas
+    # ------------------------------------------------------------
+    routers = [
+        auth_router,
+        ...
+        examples_router,
+        admin_categorias_router, # ← ADICIONE ESTA LINHA
+    ]
 ```
 
 ### Explicação
 
-```python
-app.include_router(admin_categorias_router, tags=["Admin - Categorias"])
-```
-
-- `include_router`: Registra todas as rotas do router
-- `tags`: Organiza endpoints na documentação automática
+Essa lista de rotas é percorrida e cada router é registrado na aplicação FastAPI. Ao adicionar o `admin_categorias_router`, todas as rotas definidas em `admin_categorias_routes.py` estarão disponíveis na aplicação.
 
 ### ✅ Checkpoint
 
@@ -1892,11 +1882,10 @@ app.include_router(admin_categorias_router, tags=["Admin - Categorias"])
 2. Acesse a documentação automática:
 
 ```
-http://localhost:8000/docs
+http://localhost:8406/docs
 ```
 
-3. Procure pela seção "Admin - Categorias"
-4. Deve listar os 7 endpoints criados
+3. Deve listar os 7 endpoints criados
 
 ---
 
@@ -1921,86 +1910,69 @@ mkdir -p templates/admin/categorias
 ```html
 {% extends "base_privada.html" %}
 
-{% block titulo %}Categorias{% endblock %}
+{% block titulo %}Gerenciar Categorias{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Gerenciar Categorias</h1>
-        <a href="/admin/categorias/cadastrar" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Nova Categoria
-        </a>
-    </div>
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-folder"></i> Gerenciar Categorias</h2>
+            <a href="/admin/categorias/cadastrar" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Nova Categoria
+            </a>
+        </div>
 
-    {% if categorias %}
-    <div class="table-responsive">
-        <table class="table table-striped table-hover">
-            <thead class="table-dark">
-                <tr>
-                    <th>ID</th>
-                    <th>Nome</th>
-                    <th>Descrição</th>
-                    <th>Data Cadastro</th>
-                    <th class="text-center">Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for categoria in categorias %}
-                <tr>
-                    <td>{{ categoria.id }}</td>
-                    <td><strong>{{ categoria.nome }}</strong></td>
-                    <td>{{ categoria.descricao if categoria.descricao else '-' }}</td>
-                    <td>
-                        {% if categoria.data_cadastro %}
-                            {{ categoria.data_cadastro.strftime('%d/%m/%Y %H:%M') }}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </td>
-                    <td class="text-center">
-                        <a href="/admin/categorias/editar/{{ categoria.id }}"
-                           class="btn btn-sm btn-warning"
-                           title="Editar">
-                            <i class="bi bi-pencil"></i>
-                        </a>
-                        <button type="button"
-                                class="btn btn-sm btn-danger"
-                                title="Excluir"
-                                onclick="excluirCategoria({{ categoria.id }}, '{{ categoria.nome }}', '{{ categoria.descricao }}')">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <div class="alert alert-info">
-        <i class="bi bi-info-circle"></i>
-        Nenhuma categoria cadastrada ainda.
-        <a href="/admin/categorias/cadastrar">Cadastre a primeira categoria</a>.
-    </div>
-    {% endif %}
-</div>
+        <div class="card shadow-sm">
+            <div class="card-body">
+                {% if categorias %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th scope="col">ID</th>
+                                <th scope="col">Nome</th>
+                                <th scope="col">Descrição</th>
+                                <th scope="col">Data Cadastro</th>
+                                <th scope="col" class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for categoria in categorias %}
+                            <tr>
+                                <td>{{ categoria.id }}</td>
+                                <td><strong>{{ categoria.nome }}</strong></td>
+                                <td>{{ categoria.descricao if categoria.descricao else '-' }}</td>
+                                <td>{{ categoria.data_cadastro|data_br if categoria.data_cadastro else '-' }}</td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="/admin/categorias/editar/{{ categoria.id }}"
+                                            class="btn btn-outline-primary" title="Editar"
+                                            aria-label="Editar categoria {{ categoria.nome }}">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-outline-danger" title="Excluir"
+                                            aria-label="Excluir categoria {{ categoria.nome }}"
+                                            onclick="excluirCategoria({{ categoria.id }}, '{{ categoria.nome|replace("'", "\\'") }}', '{{ categoria.descricao|replace("'", "\\'") if categoria.descricao else "" }}')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
 
-<!-- Modal de Confirmação de Exclusão -->
-<div class="modal fade" id="modalConfirmacao" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">Confirmar Exclusão</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p id="mensagemConfirmacao"></p>
-                <div id="detalhesConfirmacao"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <form id="formExcluir" method="POST" style="display:inline;">
-                    <button type="submit" class="btn btn-danger">Confirmar Exclusão</button>
-                </form>
+                <div class="mt-3">
+                    <small class="text-muted">
+                        Total: {{ categorias|length }} categoria(s)
+                    </small>
+                </div>
+                {% else %}
+                <div class="alert alert-info text-center mb-0">
+                    <i class="bi bi-info-circle"></i> Nenhuma categoria cadastrada.
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -2009,120 +1981,153 @@ mkdir -p templates/admin/categorias
 
 {% block scripts %}
 <script>
-function excluirCategoria(categoriaId, categoriaNome, categoriaDescricao) {
-    // Monta os detalhes da categoria
-    const detalhes = `
-        <div class="alert alert-warning">
-            <strong>ID:</strong> ${categoriaId}<br>
-            <strong>Nome:</strong> ${categoriaNome}<br>
-            <strong>Descrição:</strong> ${categoriaDescricao || '-'}
+    /**
+     * Função para excluir uma categoria
+     */
+    function excluirCategoria(categoriaId, categoriaNome, categoriaDescricao) {
+        const detalhes = `
+        <div class="card bg-light">
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr>
+                        <th scope="row" width="30%">Nome:</th>
+                        <td><strong>${categoriaNome}</strong></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Descrição:</th>
+                        <td>${categoriaDescricao || '-'}</td>
+                    </tr>
+                </table>
+            </div>
         </div>
     `;
 
-    // Atualiza o modal
-    document.getElementById('mensagemConfirmacao').textContent =
-        'Tem certeza que deseja excluir esta categoria?';
-    document.getElementById('detalhesConfirmacao').innerHTML = detalhes;
-    document.getElementById('formExcluir').action = `/admin/categorias/excluir/${categoriaId}`;
-
-    // Abre o modal
-    const modal = new bootstrap.Modal(document.getElementById('modalConfirmacao'));
-    modal.show();
-}
+        abrirModalConfirmacao({
+            url: `/admin/categorias/excluir/${categoriaId}`,
+            mensagem: 'Tem certeza que deseja excluir esta categoria?',
+            detalhes: detalhes
+        });
+    }
 </script>
 {% endblock %}
 ```
 
 ### Explicação Detalhada
 
-#### Extends e Blocks
+#### Estrutura com Card Bootstrap
 
 ```html
-{% extends "base_privada.html" %}
-
-{% block titulo %}Categorias{% endblock %}
-
-{% block content %}
-...
-{% endblock %}
-```
-
-- `extends`: Herda o layout do template base (com menu, header, footer)
-- `block titulo`: Define o título da página
-- `block content`: Define o conteúdo principal
-
-#### Loop Jinja2
-
-```html
-{% for categoria in categorias %}
-<tr>
-    <td>{{ categoria.id }}</td>
-    <td>{{ categoria.nome }}</td>
-</tr>
-{% endfor %}
-```
-
-- Itera sobre a lista de categorias
-- `{{ categoria.nome }}`: Exibe valor escapado (protegido contra XSS)
-
-#### Condicionais
-
-```html
-{% if categorias %}
-    <!-- Mostra tabela -->
-{% else %}
-    <!-- Mostra mensagem vazia -->
-{% endif %}
-```
-
-#### Formatação de Data
-
-```html
-{{ categoria.data_cadastro.strftime('%d/%m/%Y %H:%M') }}
-```
-
-- Formata datetime para padrão brasileiro: 28/10/2025 14:30
-
-#### Botão com Ícone Bootstrap
-
-```html
-<button class="btn btn-sm btn-danger" onclick="excluirCategoria(...)">
-    <i class="bi bi-trash"></i>
-</button>
-```
-
-- `btn btn-sm btn-danger`: Botão pequeno vermelho
-- `bi bi-trash`: Ícone de lixeira do Bootstrap Icons
-
-#### Modal Bootstrap
-
-```html
-<div class="modal fade" id="modalConfirmacao">
-    <!-- Estrutura do modal -->
+<div class="card shadow-sm">
+    <div class="card-body">
+        <!-- Conteúdo -->
+    </div>
 </div>
 ```
 
-- Modal de confirmação antes de excluir
-- Evita exclusões acidentais
+- **Card**: Componente Bootstrap que cria um container com borda e sombra
+- `shadow-sm`: Adiciona sombra leve para dar profundidade
+- Padrão usado em todas as páginas admin do SimpleBlog para consistência visual
 
-#### JavaScript
+#### Título com Ícone
 
-```javascript
-function excluirCategoria(categoriaId, categoriaNome, categoriaDescricao) {
-    // Preenche os detalhes no modal
-    document.getElementById('detalhesConfirmacao').innerHTML = detalhes;
-
-    // Define a action do form
-    document.getElementById('formExcluir').action = `/admin/categorias/excluir/${categoriaId}`;
-
-    // Abre o modal
-    const modal = new bootstrap.Modal(document.getElementById('modalConfirmacao'));
-    modal.show();
-}
+```html
+<h2><i class="bi bi-folder"></i> Gerenciar Categorias</h2>
 ```
 
-- Preenche dinamicamente o modal com dados da categoria
-- Define a URL de exclusão correta
+- `bi bi-folder`: Ícone de pasta do Bootstrap Icons
+- Torna a interface mais visual e intuitiva
+- Cada seção do admin tem seu ícone característico
+
+#### Grid System do Bootstrap
+
+```html
+<div class="row">
+    <div class="col-12">
+        <!-- Conteúdo ocupa toda a largura -->
+    </div>
+</div>
+```
+
+- Sistema de grid responsivo (12 colunas)
+- `col-12`: Ocupa as 12 colunas (100% da largura)
+
+#### Tabela com Estilo Moderno
+
+```html
+<table class="table table-hover align-middle mb-0">
+    <thead class="table-light">
+        <th scope="col">Nome</th>
+    </thead>
+</table>
+```
+
+- `table-hover`: Destaca linha ao passar o mouse
+- `align-middle`: Alinha conteúdo verticalmente ao centro
+- `mb-0`: Remove margem inferior (porque está dentro do card)
+- `table-light`: Cabeçalho cinza claro (padrão SimpleBlog, mais suave que `table-dark`)
+- `scope="col"`: Melhora acessibilidade
+
+#### Filtro Jinja2 para Datas
+
+```html
+{{ categoria.data_cadastro|data_br if categoria.data_cadastro else '-' }}
+```
+
+- `|data_br`: Filtro customizado que formata para DD/MM/YYYY
+- Mais limpo que usar `strftime()` diretamente
+- Se não há data, exibe "-"
+
+#### Button Group
+
+```html
+<div class="btn-group btn-group-sm" role="group">
+    <a class="btn btn-outline-primary">Editar</a>
+    <button class="btn btn-outline-danger">Excluir</button>
+</div>
+```
+
+- Agrupa botões lado a lado sem espaço
+- `btn-outline-*`: Botões com borda colorida (mais moderno)
+- `btn-group-sm`: Tamanho pequeno
+
+#### Segurança: Escape de Aspas
+
+```html
+onclick="excluirCategoria(..., '{{ categoria.nome|replace("'", "\\'") }}')"
+```
+
+- `|replace("'", "\\'")`: Escapa aspas simples
+- Previne quebra de JavaScript se nome tiver aspas
+- **Muito importante para segurança!**
+
+#### Contador de Registros
+
+```html
+<div class="mt-3">
+    <small class="text-muted">
+        Total: {{ categorias|length }} categoria(s)
+    </small>
+</div>
+```
+
+- Mostra quantas categorias existem
+- `|length`: Filtro que conta elementos da lista
+- `text-muted`: Cor cinza suave
+
+#### Função Global abrirModalConfirmacao()
+
+```javascript
+abrirModalConfirmacao({
+    url: `/admin/categorias/excluir/${categoriaId}`,
+    mensagem: 'Tem certeza que deseja excluir esta categoria?',
+    detalhes: detalhes
+});
+```
+
+- **Função global** definida em `base_privada.html`
+- Centraliza a lógica do modal de confirmação
+- Usado em todas as páginas admin para consistência
+- Você **NÃO** precisa criar o modal manualmente no template!
 
 ### ✅ Checkpoint
 
@@ -2135,7 +2140,7 @@ uvicorn main:app --reload
 2. Acesse como admin:
 
 ```
-http://localhost:8000/admin/categorias/listar
+http://localhost:8406/admin/categorias/listar
 ```
 
 3. Deve aparecer a mensagem "Nenhuma categoria cadastrada ainda"
@@ -2162,52 +2167,55 @@ Criar o formulário HTML para cadastrar novas categorias.
 {% block titulo %}Cadastrar Categoria{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Cadastrar Categoria</h1>
-        <a href="/admin/categorias/listar" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i> Voltar
-        </a>
-    </div>
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex align-items-center mb-4">
+            <h2 class="mb-0"><i class="bi bi-folder-plus"></i> Cadastrar Nova Categoria</h2>
+        </div>
 
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-body">
-                    <form method="POST" action="/admin/categorias/cadastrar">
-                        {# CSRF Token - OBRIGATÓRIO em todos os formulários POST #}
-                        {{ csrf_input(request) | safe }}
-
-                        {{ field(
-                            name='nome',
-                            label='Nome da Categoria',
-                            type='text',
-                            required=true,
-                            placeholder='Ex: Tecnologia, Esportes, Política...',
-                            help_text='Nome único para identificar a categoria (3-50 caracteres)'
-                        ) }}
-
-                        {{ field(
-                            name='descricao',
-                            label='Descrição',
-                            type='textarea',
-                            required=false,
-                            placeholder='Descrição opcional da categoria...',
-                            help_text='Breve descrição sobre o que essa categoria abrange (máx 200 caracteres)',
-                            rows=3
-                        ) }}
-
-                        <div class="d-flex justify-content-end gap-2 mt-4">
-                            <a href="/admin/categorias/listar" class="btn btn-secondary">
-                                Cancelar
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle"></i> Cadastrar
-                            </button>
+        <div class="card shadow-sm">
+            <form method="POST" action="/admin/categorias/cadastrar">
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-12">
+                            {% include "components/alerta_erro.html" %}
                         </div>
-                    </form>
+
+                        <div class="col-12 mb-3">
+                            {{ field(
+                                name='nome',
+                                label='Nome da Categoria',
+                                type='text',
+                                required=true,
+                                placeholder='Ex: Tecnologia, Esportes, Política...',
+                                help_text='Nome único para identificar a categoria (3-50 caracteres)'
+                            ) }}
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            {{ field(
+                                name='descricao',
+                                label='Descrição',
+                                type='textarea',
+                                required=false,
+                                placeholder='Descrição opcional da categoria...',
+                                help_text='Breve descrição sobre o que essa categoria abrange (máx 200 caracteres)',
+                                rows=3
+                            ) }}
+                        </div>
+                    </div>
                 </div>
-            </div>
+                <div class="card-footer p-4">
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Cadastrar
+                        </button>
+                        <a href="/admin/categorias/listar" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -2216,25 +2224,100 @@ Criar o formulário HTML para cadastrar novas categorias.
 
 ### Explicação Detalhada
 
-#### 🔒 CSRF Token (OBRIGATÓRIO!)
+#### 📐 Estrutura de Grid Centralizada
 
 ```html
-{{ csrf_input(request) | safe }}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
 ```
 
-**Este é um dos elementos MAIS IMPORTANTES do formulário!**
+- **`row justify-content-center`**: Centraliza o conteúdo horizontalmente
+- **`col-lg-8`**: Ocupa 8 de 12 colunas em telas grandes (66% da largura)
+- Esta estrutura é o **padrão para formulários** no SimpleBlog
+- Garante que o formulário não fique muito largo em telas grandes
 
-- `csrf_input()`: Função que gera um campo hidden com token CSRF
-- Gera algo como: `<input type="hidden" name="csrf_token" value="abc123...">`
-- `| safe`: Marca como HTML seguro (não escapa)
-- **SEM ISSO, seu formulário NÃO FUNCIONARÁ!** (erro 403 Forbidden)
+#### 🎨 Cabeçalho com Ícone
 
-O SimpleBlog usa middleware CSRF que:
-1. Gera token único por sessão
-2. Valida token em TODAS requisições POST/PUT/PATCH/DELETE
-3. Protege contra ataques CSRF (Cross-Site Request Forgery)
+```html
+<div class="d-flex align-items-center mb-4">
+    <h2 class="mb-0"><i class="bi bi-folder-plus"></i> Cadastrar Nova Categoria</h2>
+</div>
+```
 
-**Sempre inclua em TODOS os formulários!**
+- **`h2`** em vez de `h1`: Padrão de consistência visual
+- **`mb-0`**: Remove margem inferior do h2 (já tem `mb-4` no container pai)
+- **`bi bi-folder-plus`**: Ícone do Bootstrap Icons para "nova pasta"
+- **`d-flex align-items-center`**: Alinha ícone e texto verticalmente
+
+#### 🃏 Card com Sombra
+
+```html
+<div class="card shadow-sm">
+```
+
+- **`shadow-sm`**: Adiciona sombra suave ao card
+- Padrão visual em todas as páginas admin do SimpleBlog
+- Cria elevação e destaque visual
+
+#### 📋 Formulário Dividido: Body + Footer
+
+```html
+<form method="POST" action="/admin/categorias/cadastrar">
+    <div class="card-body p-4">
+        <!-- Campos do formulário aqui -->
+    </div>
+    <div class="card-footer p-4">
+        <!-- Botões de ação aqui -->
+    </div>
+</form>
+```
+
+**Estrutura padrão para formulários no SimpleBlog:**
+- **`card-body p-4`**: Corpo do card com padding de 1.5rem
+- **`card-footer p-4`**: Rodapé do card separado visualmente
+- **Formulário envolve ambos**: Botões ficam dentro do form
+
+**Por que dividir?**
+- Separação visual clara entre conteúdo e ações
+- Footer tem background diferente (cinza claro)
+- Padrão Bootstrap comum em dashboards
+
+#### ⚠️ Componente de Alerta de Erro
+
+```html
+<div class="col-12">
+    {% include "components/alerta_erro.html" %}
+</div>
+```
+
+**IMPORTANTE:** Este componente exibe mensagens de erro gerais (não relacionadas a campos específicos).
+
+O componente `alerta_erro.html` verifica se existe `erros.geral` no contexto e exibe:
+```html
+{% if erros is defined and erros.geral %}
+<div class="alert alert-danger alert-dismissible fade show">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    {{ erros.geral }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+</div>
+{% endif %}
+```
+
+**Detalhes importantes:**
+- **`erros is defined`**: Verifica se a variável `erros` existe (evita erro em GET)
+- **`erros.geral`**: Acessa a mensagem de erro geral
+- **`alert-dismissible`**: Permite fechar o alerta
+- **`btn-close`**: Botão para fechar o alerta
+- **`aria-label`**: Acessibilidade para leitores de tela
+
+**Quando é usado?**
+- Erros de banco de dados (ex: nome de categoria duplicado)
+- Erros de negócio (ex: categoria sendo usada em artigos)
+- Erros inesperados capturados pelo handler
+- **NÃO aparece no GET** (primeira renderização) pois `erros` não está definido
+- **Aparece no POST** quando há erro de validação e `erros.geral` existe
+
+**Sempre inclua em formulários!** É o padrão do SimpleBlog.
 
 #### Import de Macro
 
@@ -2311,22 +2394,33 @@ A macro economiza muito código! 🎉
 - `method="POST"`: Envia dados via POST (seguro)
 - `action="/admin/categorias/cadastrar"`: Endpoint que processará os dados
 
-#### Botões
+#### 🔘 Botões de Ação
 
 ```html
-<div class="d-flex justify-content-end gap-2 mt-4">
-    <a href="/admin/categorias/listar" class="btn btn-secondary">
-        Cancelar
-    </a>
-    <button type="submit" class="btn btn-primary">
-        <i class="bi bi-check-circle"></i> Cadastrar
-    </button>
+<div class="card-footer p-4">
+    <div class="d-flex gap-3">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-circle"></i> Cadastrar
+        </button>
+        <a href="/admin/categorias/listar" class="btn btn-secondary">
+            <i class="bi bi-x-circle"></i> Cancelar
+        </a>
+    </div>
 </div>
 ```
 
-- `d-flex justify-content-end gap-2`: Flexbox com gap entre botões
-- Botão Cancelar → Link para voltar à listagem
-- Botão Cadastrar → Submit do formulário
+**Detalhes importantes:**
+- **`gap-3`**: Espaçamento de 1rem entre botões (padrão do SimpleBlog)
+- **Ordem**: Botão primário (ação principal) vem PRIMEIRO
+- **Ícones**: `bi-check-circle` para confirmar, `bi-x-circle` para cancelar
+- **`btn-primary`**: Botão azul para ação principal (cadastrar)
+- **`btn-secondary`**: Botão cinza para ação secundária (cancelar)
+- **Sem `justify-content-end`**: Botões ficam alinhados à esquerda (padrão do SimpleBlog)
+
+**Por que a ordem é importante?**
+- Usuário lê da esquerda para direita
+- Ação principal deve estar mais acessível
+- Padrão de UX moderno (Material Design, etc.)
 
 ### Como Funciona o Fluxo de Erro
 
@@ -2361,7 +2455,7 @@ A macro economiza muito código! 🎉
 2. Acesse:
 
 ```
-http://localhost:8000/admin/categorias/cadastrar
+http://localhost:8406/admin/categorias/cadastrar
 ```
 
 3. Teste o formulário:
@@ -2390,54 +2484,57 @@ Criar o formulário HTML para editar categorias existentes.
 {% block titulo %}Editar Categoria{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Editar Categoria</h1>
-        <a href="/admin/categorias/listar" class="btn btn-secondary">
-            <i class="bi bi-arrow-left"></i> Voltar
-        </a>
-    </div>
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="d-flex align-items-center mb-4">
+            <h2 class="mb-0"><i class="bi bi-folder-check"></i> Editar Categoria</h2>
+        </div>
 
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-body">
-                    <form method="POST" action="/admin/categorias/editar/{{ categoria.id }}">
-                        {# CSRF Token - OBRIGATÓRIO #}
-                        {{ csrf_input(request) | safe }}
-
-                        {{ field(
-                            name='nome',
-                            label='Nome da Categoria',
-                            type='text',
-                            required=true,
-                            placeholder='Ex: Tecnologia, Esportes, Política...',
-                            help_text='Nome único para identificar a categoria (3-50 caracteres)',
-                            value=categoria.nome
-                        ) }}
-
-                        {{ field(
-                            name='descricao',
-                            label='Descrição',
-                            type='textarea',
-                            required=false,
-                            placeholder='Descrição opcional da categoria...',
-                            help_text='Breve descrição sobre o que essa categoria abrange (máx 200 caracteres)',
-                            rows=3,
-                            value=categoria.descricao
-                        ) }}
-
-                        <div class="d-flex justify-content-end gap-2 mt-4">
-                            <a href="/admin/categorias/listar" class="btn btn-secondary">
-                                Cancelar
-                            </a>
-                            <button type="submit" class="btn btn-warning">
-                                <i class="bi bi-pencil"></i> Salvar Alterações
-                            </button>
+        <div class="card shadow-sm">
+            <form method="POST" action="/admin/categorias/editar/{{ dados.id if dados.id is defined else categoria.id }}">
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-12">
+                            {% include "components/alerta_erro.html" %}
                         </div>
-                    </form>
+
+                        <div class="col-12 mb-3">
+                            {{ field(
+                                name='nome',
+                                label='Nome da Categoria',
+                                type='text',
+                                required=true,
+                                placeholder='Ex: Tecnologia, Esportes, Política...',
+                                help_text='Nome único para identificar a categoria (3-50 caracteres)',
+                                value=dados.nome if dados.nome is defined else categoria.nome
+                            ) }}
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            {{ field(
+                                name='descricao',
+                                label='Descrição',
+                                type='textarea',
+                                required=false,
+                                placeholder='Descrição opcional da categoria...',
+                                help_text='Breve descrição sobre o que essa categoria abrange (máx 200 caracteres)',
+                                rows=3,
+                                value=dados.descricao if dados.descricao is defined else categoria.descricao
+                            ) }}
+                        </div>
+                    </div>
                 </div>
-            </div>
+                <div class="card-footer p-4">
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Salvar Alterações
+                        </button>
+                        <a href="/admin/categorias/listar" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -2446,40 +2543,85 @@ Criar o formulário HTML para editar categorias existentes.
 
 ### Diferenças em Relação ao Cadastro
 
-#### 1. Form Action Dinâmica
+#### 1. Ícone do Título
 
 ```html
-<form method="POST" action="/admin/categorias/editar/{{ categoria.id }}">
+<h2 class="mb-0"><i class="bi bi-folder-check"></i> Editar Categoria</h2>
 ```
 
-- Usa o ID da categoria na URL
-- Exemplo: `/admin/categorias/editar/5`
+- **`bi-folder-check`**: Ícone de "pasta com check" para edição
+- Diferente do cadastro que usa `bi-folder-plus`
 
-#### 2. Valores Pré-preenchidos
+#### 2. Form Action Dinâmica com Fallback
+
+```html
+<form method="POST" action="/admin/categorias/editar/{{ dados.id if dados is defined and dados.id else categoria.id }}">
+```
+
+**IMPORTANTE:** Esta é a forma correta de definir a action!
+
+- **Primeiro verifica**: `dados is defined` (se a variável existe)
+- **Depois acessa**: `dados.id` (se existir e tiver valor)
+- **Se não existir**: `categoria.id` (na primeira renderização)
+- **Por quê?** Quando há erro de validação, `categoria` pode não estar no contexto
+- **Exemplo de URL gerada**: `/admin/categorias/editar/5`
+
+**ATENÇÃO:** Sempre verifique `dados is defined` ANTES de acessar propriedades!
+- ❌ **ERRADO**: `dados.id if dados.id is defined` → Erro se `dados` não existir
+- ✅ **CORRETO**: `dados.id if dados is defined and dados.id` → Seguro
+
+**Sem o fallback:** Se houver erro de validação, a action seria `/admin/categorias/editar/` (sem ID) → ERRO 404!
+
+#### 3. Valores Pré-preenchidos com Fallback
 
 ```html
 {{ field(
     name='nome',
     ...
-    value=categoria.nome  ← Preenche com valor atual
+    value=dados.nome if dados is defined and dados.nome else categoria.nome
 ) }}
 ```
 
-- `value=categoria.nome`: Campo começa com o nome atual
-- `value=categoria.descricao`: Campo começa com a descrição atual
+**IMPORTANTE:** Este padrão é CRÍTICO para formulários de edição!
 
-Se houver erro de validação, a macro usa `dados.nome` (do formulário) em vez de `categoria.nome`.
+**Sintaxe correta:**
+- ✅ **CORRETO**: `dados.nome if dados is defined and dados.nome else categoria.nome`
+- ❌ **ERRADO**: `dados.nome if dados.nome is defined else categoria.nome` → Erro se `dados` não existir!
 
-#### 3. Botão Diferente
+**Como funciona:**
+1. **Primeiro acesso** (GET):
+   - `dados` não existe (não está definido)
+   - Usa `categoria.nome` (valor do banco de dados)
+   - Campo exibe: "Tecnologia"
+
+2. **Erro de validação** (POST com erro):
+   - `dados` existe e `dados.nome` tem valor (o que o usuário digitou)
+   - Usa `dados.nome` (mantém o que o usuário digitou)
+   - Campo exibe: "Te" (valor inválido que o usuário tentou submeter)
+
+**Por quê?** Sem isso, ao ter erro de validação:
+- Os campos voltariam com valores do banco (perdendo o que o usuário digitou)
+- Usuário teria que redigitar TUDO novamente
+- Péssima UX (experiência do usuário)
+
+**Mesma lógica para todos os campos:**
+```html
+value=dados.descricao if dados is defined and dados.descricao else categoria.descricao
+```
+
+**Regra de ouro**: Sempre verifique `dados is defined` antes de acessar qualquer propriedade!
+
+#### 4. Texto do Botão
 
 ```html
-<button type="submit" class="btn btn-warning">
-    <i class="bi bi-pencil"></i> Salvar Alterações
+<button type="submit" class="btn btn-primary">
+    <i class="bi bi-check-circle"></i> Salvar Alterações
 </button>
 ```
 
-- `btn-warning`: Botão amarelo (padrão para edição)
-- Texto: "Salvar Alterações" em vez de "Cadastrar"
+- **Texto**: "Salvar Alterações" em vez de "Cadastrar"
+- **Mesmo estilo**: `btn-primary` (mantém consistência)
+- **Mesmo ícone**: `bi-check-circle` (ação de confirmação)
 
 ### Como a Route Passa os Dados
 
@@ -2514,6 +2656,154 @@ No template, podemos acessar:
 
 ---
 
+## 📋 Resumo dos Padrões para Templates de Formulário
+
+### Estrutura Padrão (Cadastro e Edição)
+
+Todos os templates de formulário no SimpleBlog seguem esta estrutura:
+
+```html
+{% extends "base_privada.html" %}
+{% from "macros/form_fields.html" import field with context %}
+
+{% block titulo %}Título da Página{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <!-- Cabeçalho -->
+        <div class="d-flex align-items-center mb-4">
+            <h2 class="mb-0"><i class="bi bi-icon-name"></i> Título</h2>
+        </div>
+
+        <!-- Card com Formulário -->
+        <div class="card shadow-sm">
+            <form method="POST" action="/rota/acao">
+                <!-- Corpo: Campos do Formulário -->
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-12">
+                            {% include "components/alerta_erro.html" %}
+                        </div>
+
+                        <div class="col-12 mb-3">
+                            {{ field(...) }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rodapé: Botões de Ação -->
+                <div class="card-footer p-4">
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Ação Principal
+                        </button>
+                        <a href="/rota/listar" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancelar
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+```
+
+### Checklist de Padrões
+
+Ao criar um novo template de formulário, garanta que:
+
+- ✅ **Grid**: `<div class="row justify-content-center"><div class="col-lg-8">`
+- ✅ **Título**: `<h2 class="mb-0">` com ícone apropriado
+- ✅ **Card**: Classe `shadow-sm`
+- ✅ **Formulário**: Dentro do card, envolvendo body e footer
+- ✅ **Body**: `<div class="card-body p-4">`
+- ✅ **Footer**: `<div class="card-footer p-4">`
+- ✅ **Alerta**: `{% include "components/alerta_erro.html" %}` dentro de `<div class="col-12">`
+- ✅ **Campos**: Cada campo em `<div class="col-12 mb-3">`
+- ✅ **Botões**: `<div class="d-flex gap-3">` (sem justify-content-end)
+- ✅ **Ordem dos botões**: Primário primeiro, Secundário depois
+- ✅ **Ícones nos botões**: `bi-check-circle` para confirmar, `bi-x-circle` para cancelar
+
+### Ícones por Contexto
+
+| Contexto | Ícone | Código |
+|----------|-------|--------|
+| **Cadastrar** | 📁+ | `bi-folder-plus` |
+| **Editar** | 📁✓ | `bi-folder-check` |
+| **Listar** | 📁 | `bi-folder` |
+| **Confirmar** | ✓ | `bi-check-circle` |
+| **Cancelar** | ✗ | `bi-x-circle` |
+| **Adicionar** | + | `bi-plus-circle` |
+| **Editar (ação)** | ✏️ | `bi-pencil` |
+| **Excluir** | 🗑️ | `bi-trash` |
+
+### 🎯 Regra de Consistência: Menu vs Título da Página
+
+**IMPORTANTE:** O ícone usado no menu lateral/superior DEVE ser o MESMO ícone usado no título da página de listagem.
+
+**Exemplos corretos (todos os módulos do SimpleBlog):**
+
+| Módulo | Menu (base_privada.html) | Título da Página Principal | Status |
+|--------|--------------------------|---------------------------|--------|
+| Dashboard | `<i class="bi bi-house-door"></i>` | `<h1><i class="bi bi-house-door"></i> Bem-vindo(a)...</h1>` | ✅ Consistente |
+| Perfil | `<i class="bi bi-person"></i>` | `<h2><i class="bi bi-person"></i> Nome do Usuário</h2>` | ✅ Consistente |
+| Chamados | `<i class="bi bi-headset"></i>` | `<h2><i class="bi bi-headset"></i> Gerenciar Chamados</h2>` | ✅ Consistente |
+| Usuários | `<i class="bi bi-people"></i>` | `<h2><i class="bi bi-people"></i> Gerenciar Usuários</h2>` | ✅ Consistente |
+| Categorias | `<i class="bi bi-folder"></i>` | `<h2><i class="bi bi-folder"></i> Gerenciar Categorias</h2>` | ✅ Consistente |
+| Tema | `<i class="bi bi-palette"></i>` | `<h2><i class="bi bi-palette"></i> Personalizar Tema</h2>` | ✅ Consistente |
+| Auditoria | `<i class="bi bi-journal-text"></i>` | `<h2><i class="bi bi-journal-text"></i> Auditoria de Logs</h2>` | ✅ Consistente |
+| Backup | `<i class="bi bi-server"></i>` | `<h2><i class="bi bi-server"></i> Gerenciar Backups</h2>` | ✅ Consistente |
+
+**Por quê?**
+- **Consistência visual**: Usuário associa o ícone ao módulo
+- **Navegação intuitiva**: Ícone no menu = ícone na página confirma onde está
+- **Identidade visual**: Cada módulo tem seu ícone único
+
+**Como aplicar:**
+1. Escolha o ícone principal do módulo (ex: `bi-folder` para Categorias)
+2. Use esse ícone no link do menu em `base_privada.html`
+3. Use o MESMO ícone no título da página de listagem
+4. Use variações desse ícone nas outras páginas:
+   - Cadastrar: adicione sufixo `-plus` (ex: `bi-folder-plus`)
+   - Editar: adicione sufixo `-check` ou similar (ex: `bi-folder-check`)
+   - Visualizar: use o ícone base ou `-fill` (ex: `bi-folder-fill`)
+
+### Padrão para Edição: Fallback de Valores
+
+**SEMPRE use este padrão em formulários de edição:**
+
+```html
+<!-- Form action -->
+action="/rota/editar/{{ dados.id if dados is defined and dados.id else objeto.id }}"
+
+<!-- Campo -->
+value=dados.campo if dados is defined and dados.campo else objeto.campo
+```
+
+**ATENÇÃO - Sintaxe correta:**
+- ✅ **CORRETO**: `dados.campo if dados is defined and dados.campo else objeto.campo`
+- ❌ **ERRADO**: `dados.campo if dados.campo is defined else objeto.campo` → Causa erro!
+
+**Por quê?**
+- `dados`: Existe quando há erro de validação (mantém o que o usuário digitou)
+- `objeto`: Existe na primeira renderização (dados do banco)
+- Sem o fallback, o formulário perde os dados ao ter erro de validação
+- **SEMPRE verifique `dados is defined` ANTES de acessar propriedades!**
+
+### Diferenças: Cadastro vs Edição
+
+| Aspecto | Cadastro | Edição |
+|---------|----------|--------|
+| **Ícone** | `bi-folder-plus` | `bi-folder-check` |
+| **Título** | "Cadastrar Nova X" | "Editar X" |
+| **Action** | `/rota/cadastrar` | `/rota/editar/{{ dados.id if dados is defined and dados.id else objeto.id }}` |
+| **Valor dos campos** | Sem `value` (ou apenas `dados.campo`) | `value=dados.campo if dados is defined and dados.campo else objeto.campo` |
+| **Botão submit** | "Cadastrar" | "Salvar Alterações" |
+
+---
+
 ## Passo 11: Adicionar Link no Menu
 
 ### Objetivo
@@ -2534,14 +2824,9 @@ Procure a seção do menu de administração. Deve haver algo como:
         <i class="bi bi-people"></i> Usuários
     </a>
 </li>
-<li class="nav-item">
-    <a class="nav-link" href="/admin/artigos/listar">
-        <i class="bi bi-file-earmark-text"></i> Artigos
-    </a>
-</li>
 ```
 
-**Adicione** após os outros itens:
+**Adicione** logo após esse item:
 
 ```html
 <li class="nav-item">
@@ -2596,7 +2881,7 @@ Realizar testes end-to-end (ponta a ponta) para garantir que tudo funciona corre
 
 #### ✅ Teste 1: Listar Categorias Vazias
 
-1. Acesse: `http://localhost:8000/admin/categorias/listar`
+1. Acesse: `http://localhost:8406/admin/categorias/listar`
 2. **Esperado**: Mensagem "Nenhuma categoria cadastrada ainda"
 
 #### ✅ Teste 2: Cadastrar Categoria Válida
@@ -2682,7 +2967,7 @@ Realizar testes end-to-end (ponta a ponta) para garantir que tudo funciona corre
 #### ✅ Teste 10: Acesso Não Autorizado
 
 1. Faça logout
-2. Tente acessar: `http://localhost:8000/admin/categorias/listar`
+2. Tente acessar: `http://localhost:8406/admin/categorias/listar`
 3. **Esperado**: Redireciona para página de login
 
 ### Teste no Terminal
@@ -2691,14 +2976,14 @@ Você também pode testar via linha de comando:
 
 ```bash
 # Teste 1: Listar (precisa estar logado como admin)
-curl -X GET http://localhost:8000/admin/categorias/listar
+curl -X GET http://localhost:8406/admin/categorias/listar
 
 # Teste 2: Criar (POST)
-curl -X POST http://localhost:8000/admin/categorias/cadastrar \
+curl -X POST http://localhost:8406/admin/categorias/cadastrar \
   -d "nome=Esportes&descricao=Notícias esportivas"
 
 # Teste 3: Ver documentação automática
-# Acesse: http://localhost:8000/docs
+# Acesse: http://localhost:8406/docs
 # Procure por "Admin - Categorias"
 ```
 
@@ -3100,10 +3385,12 @@ jinja2.exceptions.TemplateNotFound: admin/categorias/listar.html
 1. Verifique se a pasta existe: `templates/admin/categorias/`
 2. Verifique se o arquivo existe: `listar.html`
 3. Verifique o nome exato (case-sensitive)
-4. Verifique se `templates` está configurado no FastAPI:
+4. Verifique se `templates` está configurado corretamente nas rotas:
    ```python
-   templates = Jinja2Templates(directory="templates")
+   from util.template_util import criar_templates
+   templates = criar_templates("templates")
    ```
+   **IMPORTANTE**: Use `criar_templates()` em vez de `Jinja2Templates()` diretamente para garantir que todas as funções globais necessárias (como `csrf_input()`) estejam disponíveis nos templates.
 
 ### Problema 2: Categoria não salva no banco
 
@@ -3136,7 +3423,7 @@ ModuleNotFoundError: No module named 'dtos.categoria_dto'
 
 ### Problema 4: Erro 404 ao acessar rota
 
-**Sintoma**: `http://localhost:8000/admin/categorias/listar` retorna 404
+**Sintoma**: `http://localhost:8406/admin/categorias/listar` retorna 404
 
 **Soluções**:
 1. Verifique se o router foi registrado no `main.py`:
@@ -3226,6 +3513,203 @@ if categoria_existente:
 2. Verifique se `base_privada.html` tem o sistema de toasts
 3. Verifique se há JavaScript para mostrar os toasts
 4. Abra o Console → Procure por erros
+
+### Problema 11: Erro 500 - "csrf_token is undefined"
+
+**Sintoma**:
+```
+jinja2.exceptions.UndefinedError: 'csrf_token' is undefined
+```
+
+**Causa**: O template está tentando usar `{{ csrf_token() }}` mas a função não está disponível no contexto Jinja2.
+
+**Solução**:
+1. **Nas rotas**, use `criar_templates()` em vez de `Jinja2Templates()`:
+   ```python
+   # ❌ ERRADO
+   from fastapi.templating import Jinja2Templates
+   templates = Jinja2Templates(directory="templates")
+
+   # ✅ CORRETO
+   from util.template_util import criar_templates
+   templates = criar_templates("templates")
+   ```
+
+2. **Nos templates**, para acessar o token CSRF em JavaScript:
+   ```javascript
+   // Use request.session.get() em vez de csrf_token()
+   headers: {
+       'X-CSRFToken': '{{ request.session.get("_csrf_token") }}'
+   }
+   ```
+
+3. **Nos formulários HTML**, use a função `csrf_input()`:
+   ```html
+   <form method="POST">
+       {{ csrf_input(request) | safe }}
+       <!-- outros campos -->
+   </form>
+   ```
+
+**Explicação**: A função `criar_templates()` configura o ambiente Jinja2 com todas as funções globais necessárias (como `csrf_input()`, `obter_mensagens()`, etc.). Se usar `Jinja2Templates()` diretamente, essas funções não estarão disponíveis.
+
+### Problema 12: Erro 500 - "'erros' is undefined"
+
+**Sintoma**:
+```
+jinja2.exceptions.UndefinedError: 'erros' is undefined
+```
+
+**Erro completo**:
+```
+File "templates/components/alerta_erro.html", line 1
+{% if erros.geral %}
+```
+
+**Causa**: O componente `alerta_erro.html` está tentando acessar `erros.geral`, mas a variável `erros` não foi passada no contexto do template (comum na primeira renderização GET de um formulário).
+
+**Solução**:
+
+Corrija o arquivo `templates/components/alerta_erro.html`:
+
+```html
+{# ❌ ERRADO - Causa erro se 'erros' não estiver definido #}
+{% if erros.geral %}
+<div class="alert alert-danger">
+    {{ erros.geral }}
+</div>
+{% endif %}
+
+{# ✅ CORRETO - Verifica se 'erros' existe antes de acessar #}
+{% if erros is defined and erros.geral %}
+<div class="alert alert-danger alert-dismissible fade show">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    {{ erros.geral }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+</div>
+{% endif %}
+```
+
+**Explicação**:
+- **`erros is defined`**: Verifica se a variável existe no contexto antes de acessar suas propriedades
+- **Quando `erros` não está definido**: Na primeira renderização (GET) do formulário
+- **Quando `erros` está definido**: Quando há erro de validação (POST retorna com erros)
+- **`alert-dismissible`**: Permite ao usuário fechar o alerta
+- **`aria-label`**: Melhora a acessibilidade para leitores de tela
+
+**Por que acontece**:
+
+1. **Rota GET** (primeira vez que acessa o formulário):
+   ```python
+   @router.get("/cadastrar")
+   async def get_cadastrar(request: Request):
+       return templates.TemplateResponse(
+           "admin/categorias/cadastro.html",
+           {"request": request}  # ← 'erros' NÃO está aqui!
+       )
+   ```
+
+2. **Rota POST com erro** (após validação falhar):
+   ```python
+   except ValidationError as e:
+       raise FormValidationError(
+           template="admin/categorias/cadastro.html",
+           context={"request": request},
+           erros=erros  # ← 'erros' ESTÁ aqui!
+       )
+   ```
+
+**Regra geral**: Sempre use `is defined` ao acessar variáveis que podem não existir no contexto Jinja2.
+
+### Problema 13: Erro 500 - "'dados' is undefined" em formulário de edição
+
+**Sintoma**:
+```
+jinja2.exceptions.UndefinedError: 'dados' is undefined
+```
+
+**Erro completo**:
+```
+File "templates/admin/categorias/editar.html", line 14
+<form method="POST" action="/admin/categorias/editar/{{ dados.id if dados.id is defined else categoria.id }}">
+```
+
+**Causa**: O template está tentando acessar `dados.id` ou `dados.nome` sem verificar se a variável `dados` existe primeiro. Na primeira renderização (GET), `dados` não está no contexto.
+
+**Problema na sintaxe**:
+```html
+{# ❌ ERRADO - Tenta acessar dados.id antes de verificar se dados existe #}
+{{ dados.id if dados.id is defined else categoria.id }}
+
+{# ❌ ERRADO - Mesmo problema #}
+{{ dados.nome if dados.nome is defined else categoria.nome }}
+```
+
+**Solução**:
+
+Use `dados is defined` ANTES de acessar qualquer propriedade:
+
+```html
+{# ✅ CORRETO - Verifica se dados existe primeiro #}
+{{ dados.id if dados is defined and dados.id else categoria.id }}
+
+{# ✅ CORRETO - Mesmo padrão para campos #}
+{{ dados.nome if dados is defined and dados.nome else categoria.nome }}
+```
+
+**Exemplo completo no template de edição**:
+
+```html
+{# Form action #}
+<form method="POST" action="/admin/categorias/editar/{{ dados.id if dados is defined and dados.id else categoria.id }}">
+
+    {# Campo nome #}
+    {{ field(
+        name='nome',
+        value=dados.nome if dados is defined and dados.nome else categoria.nome
+    ) }}
+
+    {# Campo descricao #}
+    {{ field(
+        name='descricao',
+        value=dados.descricao if dados is defined and dados.descricao else categoria.descricao
+    ) }}
+</form>
+```
+
+**Por que acontece**:
+
+1. **GET /editar/5** (primeira renderização):
+   ```python
+   return templates.TemplateResponse(
+       "admin/categorias/editar.html",
+       {"request": request, "categoria": categoria}
+       # ← 'dados' NÃO está aqui!
+   )
+   ```
+
+2. **POST /editar/5** (com erro de validação):
+   ```python
+   raise FormValidationError(
+       template="admin/categorias/editar.html",
+       context={"request": request},
+       erros=erros,
+       dados={"id": id, "nome": nome, "descricao": descricao}
+       # ← 'dados' ESTÁ aqui!
+   )
+   ```
+
+**Regra de ouro**:
+- Em templates de **cadastro**: `dados.campo if dados is defined and dados.campo else ''`
+- Em templates de **edição**: `dados.campo if dados is defined and dados.campo else objeto.campo`
+- **SEMPRE** verifique `dados is defined` antes de acessar propriedades!
+
+**Diferença importante**:
+
+| Sintaxe | Resultado |
+|---------|-----------|
+| `dados.id is defined` | ❌ Erro se `dados` não existir (tenta acessar `.id` de algo indefinido) |
+| `dados is defined and dados.id` | ✅ Seguro: verifica se `dados` existe antes de acessar `.id` |
 
 ---
 

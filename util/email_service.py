@@ -3,11 +3,12 @@ import resend
 from typing import Optional
 from util.logger_config import logger
 
+
 class EmailService:
     def __init__(self):
-        self.api_key = os.getenv('RESEND_API_KEY')
-        self.from_email = os.getenv('RESEND_FROM_EMAIL', 'noreply@seudominio.com')
-        self.from_name = os.getenv('RESEND_FROM_NAME', 'Sistema')
+        self.api_key = os.getenv("RESEND_API_KEY")
+        self.from_email = os.getenv("RESEND_FROM_EMAIL", "noreply@seudominio.com")
+        self.from_name = os.getenv("RESEND_FROM_NAME", "Sistema")
 
         # Configura a API key do Resend
         if self.api_key:
@@ -19,7 +20,7 @@ class EmailService:
         para_nome: str,
         assunto: str,
         html: str,
-        texto: Optional[str] = None
+        texto: Optional[str] = None,
     ) -> bool:
         """Envia e-mail via Resend.com"""
         if not self.api_key:
@@ -30,20 +31,24 @@ class EmailService:
             "from": f"{self.from_name} <{self.from_email}>",
             "to": [para_email],
             "subject": assunto,
-            "html": html
+            "html": html,
         }
 
         try:
             email = resend.Emails.send(params)  # type: ignore[arg-type]
-            logger.info(f"E-mail enviado para {para_email} - ID: {email.get('id', 'N/A')}")
+            logger.info(
+                f"E-mail enviado para {para_email} - ID: {email.get('id', 'N/A')}"
+            )
             return True
         except Exception as e:
             logger.error(f"Erro ao enviar e-mail: {e}")
             return False
 
-    def enviar_recuperacao_senha(self, para_email: str, para_nome: str, token: str) -> bool:
+    def enviar_recuperacao_senha(
+        self, para_email: str, para_nome: str, token: str
+    ) -> bool:
         """Envia e-mail de recuperação de senha"""
-        url_recuperacao = f"{os.getenv('BASE_URL', 'http://localhost:8000')}/redefinir-senha?token={token}"
+        url_recuperacao = f"{os.getenv('BASE_URL', 'http://localhost:8406')}/redefinir-senha?token={token}"
 
         html = f"""
         <html>
@@ -63,7 +68,7 @@ class EmailService:
             para_email=para_email,
             para_nome=para_nome,
             assunto="Recuperação de Senha",
-            html=html
+            html=html,
         )
 
     def enviar_boas_vindas(self, para_email: str, para_nome: str) -> bool:
@@ -83,8 +88,9 @@ class EmailService:
             para_email=para_email,
             para_nome=para_nome,
             assunto="Bem-vindo ao Sistema",
-            html=html
+            html=html,
         )
+
 
 # Instância global
 email_service = EmailService()

@@ -100,7 +100,7 @@ class CORSSecurityMiddleware(BaseHTTPMiddleware):
             allowed_origins: Lista de origens permitidas
         """
         super().__init__(app)
-        self.allowed_origins = allowed_origins or ["http://localhost:8000"]
+        self.allowed_origins = allowed_origins or ["http://localhost:8406"]
 
     async def dispatch(self, request: Request, call_next) -> Response:
         """
@@ -121,7 +121,11 @@ class CORSSecurityMiddleware(BaseHTTPMiddleware):
         if origin and origin in self.allowed_origins:
             response.headers["Access-Control-Allow-Origin"] = origin
             response.headers["Access-Control-Allow-Credentials"] = "true"
-            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
-            response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+            response.headers["Access-Control-Allow-Methods"] = (
+                "GET, POST, PUT, DELETE, OPTIONS"
+            )
+            response.headers["Access-Control-Allow-Headers"] = (
+                "Content-Type, Authorization"
+            )
 
         return response

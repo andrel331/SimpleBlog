@@ -1,5 +1,7 @@
-{% if erros.geral %}
-<div class="alert alert-danger">
+{% if erros is defined and erros.geral %}
+<div class="alert alert-danger alert-dismissible fade show">
+    <i class="bi bi-exclamation-triangle-fill"></i>
     {{ erros.geral }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
 </div>
 {% endif %}

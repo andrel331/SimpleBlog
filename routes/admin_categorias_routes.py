@@ -2,7 +2,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Request, Form, status
 from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
+from pydantic import ValidationError
 
 # DTOs e modelo
 from dtos.categoria_dto import CriarCategoriaDTO, AlterarCategoriaDTO
@@ -12,18 +12,18 @@ from model.categoria_model import Categoria
 from repo import categoria_repo
 
 # Utilitários
-from util.auth_util import requer_autenticacao # pyright: ignore[reportMissingImports]
-from util.mensagens_util import informar_sucesso, informar_erro # pyright: ignore[reportMissingImports]
-from util.rate_limiter import RateLimiter
-from util.cliente_util import obter_identificador_cliente # pyright: ignore[reportMissingImports]
+from util.auth_decorator import requer_autenticacao
+from util.flash_messages import informar_sucesso, informar_erro
+from util.rate_limiter import RateLimiter, obter_identificador_cliente
 from util.exceptions import FormValidationError
-from model.perfil_model import Perfil # pyright: ignore[reportMissingImports]
+from util.perfis import Perfil
+from util.template_util import criar_templates
 
 # ----------------------------------------------------------------------
 # Configurações do router e dos templates
 # ----------------------------------------------------------------------
 router = APIRouter(prefix="/admin/categorias")
-templates = Jinja2Templates(directory="templates")
+templates = criar_templates("templates")
 
 # Rate limiter: máximo 10 operações por minuto
 admin_categorias_limiter = RateLimiter(
@@ -142,7 +142,7 @@ async def post_cadastrar(
                 status_code=status.HTTP_303_SEE_OTHER,
             )
 
-    except Exception as e:
+    except ValidationError as e:
         raise FormValidationError(
             validation_error=e,
             template_path="admin/categorias/cadastro.html",
@@ -245,7 +245,7 @@ async def post_editar(
                 status_code=status.HTTP_303_SEE_OTHER,
             )
 
-    except Exception as e:
+    except ValidationError as e:
         raise FormValidationError(
             validation_error=e,
             template_path="admin/categorias/editar.html",

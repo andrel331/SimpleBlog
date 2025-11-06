@@ -30,8 +30,8 @@
     {#----------------------------------------------------------
        NAVBAR
        ---------------------------------------------------------- #}
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container-fluid">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
             <a class="navbar-brand" href="/">{{ APP_NAME }}</a>
 
             <button class="navbar-toggler"
@@ -49,11 +49,11 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.path == '/usuario' else '' }}"
-                           href="/usuario">Dashboard</a>
+                           href="/usuario"><i class="bi bi-house-door"></i> Dashboard</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if '/usuario/perfil/' in request.path else '' }}"
-                           href="/usuario/perfil/visualizar">Perfil</a>
+                           href="/usuario/perfil/visualizar"><i class="bi bi-person"></i> Perfil</a>
                     </li>
 
                     {% if request.session.get('usuario_logado') and
@@ -68,7 +68,7 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {{ 'active' if '/admin/categorias/' in request.path else '' }}"
-                               href="/admin/categorias/listar"><i class="bi bi-tags"></i> Categorias</a>
+                               href="/admin/categorias/listar"><i class="bi bi-folder"></i> Categorias</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {{ 'active' if '/admin/tema' in request.path else '' }}"
@@ -76,11 +76,11 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {{ 'active' if '/admin/auditoria' in request.path else '' }}"
-                               href="/admin/auditoria"><i class="bi bi-search"></i> Auditoria</a>
+                               href="/admin/auditoria"><i class="bi bi-journal-text"></i> Auditoria</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {{ 'active' if '/admin/backups/' in request.path else '' }}"
-                               href="/admin/backups/listar"><i class="bi bi-hdd"></i> Backup</a>
+                               href="/admin/backups/listar"><i class="bi bi-server"></i> Backup</a>
                         </li>
                     {% else %}
                         <li class="nav-item">

@@ -36,10 +36,10 @@
                                 <td>
                                     {% if usuario.perfil == 'Administrador' %}
                                     <span class="badge bg-danger">{{ usuario.perfil }}</span>
+                                    {% elif usuario.perfil == 'Autor' %}
+                                    <span class="badge bg-info">{{ usuario.perfil }}</span>
                                     {% elif usuario.perfil == 'Leitor' %}
                                     <span class="badge bg-warning text-dark">{{ usuario.perfil }}</span>
-                                    {% else %}
-                                    <span class="badge bg-info">{{ usuario.perfil }}</span>
                                     {% endif %}
                                 </td>
                                 <td>{{ usuario.data_cadastro|data_br if usuario.data_cadastro else '-' }}</td>
@@ -70,13 +70,13 @@
                         {% if admins %}
                         | Administradores: <strong class="text-danger">{{ admins|length }}</strong>
                         {% endif %}
+                        {% set autores = usuarios|selectattr('perfil', 'equalto', 'Autor')|list %}
+                        {% if autores %}
+                        | Autores: <strong class="text-info">{{ autores|length }}</strong>
+                        {% endif %}
                         {% set leitores = usuarios|selectattr('perfil', 'equalto', 'Leitor')|list %}
                         {% if leitores %}
                         | Leitores: <strong class="text-warning">{{ leitores|length }}</strong>
-                        {% endif %}
-                        {% set clientes = usuarios|selectattr('perfil', 'equalto', 'Cliente')|list %}
-                        {% if clientes %}
-                        | Clientes: <strong class="text-info">{{ clientes|length }}</strong>
                         {% endif %}
                     </small>
                 </div>
@@ -100,10 +100,10 @@
         let perfilBadge;
         if (usuarioPerfil === 'Administrador') {
             perfilBadge = '<span class="badge bg-danger">Administrador</span>';
+        } else if (usuarioPerfil === 'Autor') {
+            perfilBadge = '<span class="badge bg-info">Autor</span>';
         } else if (usuarioPerfil === 'Leitor') {
             perfilBadge = '<span class="badge bg-warning text-dark">Leitor</span>';
-        } else {
-            perfilBadge = '<span class="badge bg-info">Cliente</span>';
         }
 
         const detalhes = `
