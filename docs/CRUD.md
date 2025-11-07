@@ -26,154 +26,41 @@
 
 ## Introdução
 
-### O que é CRUD?
+**CRUD** = **C**reate, **R**ead, **U**pdate, **D**elete - as 4 operações básicas com dados.
 
-**CRUD** é um acrônimo para as quatro operações básicas que podemos fazer com dados:
-
-- **C**reate (Criar): Adicionar novos registros
-- **R**ead (Ler): Visualizar registros existentes
-- **U**pdate (Atualizar): Modificar registros existentes
-- **D**elete (Excluir): Remover registros
-
-Praticamente todo sistema precisa de CRUDs para gerenciar suas informações. Por exemplo:
-- Um e-commerce tem CRUD de produtos, clientes, pedidos
-- Uma rede social tem CRUD de usuários, posts, comentários
-- Um blog tem CRUD de artigos, categorias, autores
-
-### Por que Separar em Camadas?
-
-Imagine construir uma casa:
-- Você não mistura a fundação com o telhado
-- Cada parte tem sua função específica
-- Se precisar consertar o telhado, não mexe na fundação
-
-Da mesma forma, em programação separamos o código em **camadas** para:
-
-✅ **Organização**: Cada arquivo tem uma responsabilidade clara
-✅ **Manutenção**: Facilita encontrar e corrigir bugs
-✅ **Reutilização**: Podemos usar a mesma lógica em diferentes lugares
-✅ **Trabalho em equipe**: Várias pessoas podem trabalhar em camadas diferentes
-✅ **Testabilidade**: Podemos testar cada parte isoladamente
+**Arquitetura em camadas**: Organização, manutenção, reutilização, trabalho em equipe e testabilidade.
 
 ---
 
 ## Arquitetura do SimpleBlog
 
-O SimpleBlog utiliza uma **arquitetura em 7 camadas**. Vamos entender cada uma:
+```mermaid
+graph TB
+    A[Routes<br/>admin_categorias_routes.py] --> B[DTOs<br/>categoria_dto.py]
+    B --> C[Model<br/>categoria_model.py]
+    C --> D[Repository<br/>categoria_repo.py]
+    D --> E[SQL<br/>categoria_sql.py]
+    E --> F[DB Utility<br/>db_util.py]
+    F --> G[(Database<br/>dados.db)]
 
-> **📝 Nota sobre versão**: Este tutorial está atualizado para a versão mais recente do SimpleBlog. Se você está usando uma versão antiga, algumas coisas podem estar diferentes:
-> - **Perfis de usuário**: Agora usa `Leitor` (antes era `Vendedor`)
-> - **CSRF Protection**: Agora é obrigatório em todos os formulários
-> - **FormValidationError**: Novo padrão para tratamento de erros de validação
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  CAMADA 1: ROUTES (Controladores)                          │
-│  Arquivo: routes/admin_categorias_routes.py                 │
-│                                                              │
-│  Responsabilidade:                                          │
-│  • Receber requisições HTTP (GET, POST)                    │
-│  • Validar dados usando DTOs                               │
-│  • Chamar o Repository para acessar dados                  │
-│  • Retornar templates HTML ou fazer redirects              │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│  CAMADA 2: DTOs (Data Transfer Objects)                    │
-│  Arquivo: dtos/categoria_dto.py                            │
-│                                                              │
-│  Responsabilidade:                                          │
-│  • Validar dados vindos de formulários                     │
-│  • Garantir que os dados estão no formato correto          │
-│  • Aplicar regras de negócio (tamanho mín/máx, etc)       │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│  CAMADA 3: MODEL (Modelo de Domínio)                       │
-│  Arquivo: model/categoria_model.py                         │
-│                                                              │
-│  Responsabilidade:                                          │
-│  • Representar uma Categoria como objeto Python            │
-│  • Definir quais campos uma Categoria possui               │
-│  • Facilitar o transporte de dados entre camadas           │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│  CAMADA 4: REPOSITORY (Acesso a Dados)                     │
-│  Arquivo: repo/categoria_repo.py                           │
-│                                                              │
-│  Responsabilidade:                                          │
-│  • Executar operações no banco de dados                    │
-│  • Criar, ler, atualizar, excluir registros                │
-│  • Converter linhas do BD em objetos Model                 │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│  CAMADA 5: SQL (Consultas)                                 │
-│  Arquivo: sql/categoria_sql.py                             │
-│                                                              │
-│  Responsabilidade:                                          │
-│  • Armazenar queries SQL como constantes                   │
-│  • Facilitar revisão e manutenção das queries              │
-│  • Prevenir SQL Injection usando placeholders (?)          │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│  CAMADA 6: DATABASE UTILITY (Utilidades do BD)             │
-│  Arquivo: util/db_util.py                                  │
-│                                                              │
-│  Responsabilidade:                                          │
-│  • Gerenciar conexões com o banco de dados                 │
-│  • Fazer commit/rollback automático                        │
-│  • Garantir que conexões sejam fechadas corretamente       │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│  CAMADA 7: DATABASE (Banco de Dados)                       │
-│  Arquivo: dados.db (SQLite)                                │
-│                                                              │
-│  Responsabilidade:                                          │
-│  • Armazenar dados persistentemente                        │
-│  • Garantir integridade dos dados                          │
-└─────────────────────────────────────────────────────────────┘
+    style A fill:#e1f5ff
+    style B fill:#fff4e1
+    style C fill:#f0e1ff
+    style D fill:#e1ffe1
+    style E fill:#ffe1e1
+    style F fill:#ffe1f0
+    style G fill:#f5f5f5
 ```
 
-### Fluxo de uma Requisição
-
-Quando um usuário clica em "Criar Categoria":
-
-1. **Route** recebe a requisição HTTP POST
-2. **DTO** valida os dados do formulário
-3. **Route** cria um objeto **Model** com os dados validados
-4. **Route** chama o **Repository** para salvar
-5. **Repository** executa a query **SQL**
-6. **DB Utility** gerencia a conexão
-7. **Database** armazena o registro
-8. **Route** redireciona para a página de listagem
+**Fluxo**: Route recebe POST → DTO valida → Repository salva → Database armazena → Redirect
 
 ---
 
 ## Visão Geral do que Vamos Construir
 
-Vamos criar um **CRUD de Categorias** para o SimpleBlog. Ao final, teremos:
+**CRUD de Categorias**: Listar, Cadastrar, Editar, Excluir
 
-### Funcionalidades
-
-✅ **Listar todas as categorias** em uma tabela
-✅ **Cadastrar nova categoria** com nome e descrição
-✅ **Editar categoria existente** alterando seus dados
-✅ **Excluir categoria** com confirmação
-
-### Estrutura do Banco de Dados
-
-```sql
-Tabela: categoria
-- id (inteiro, chave primária, auto-incremento)
-- nome (texto, único, obrigatório, 3-50 caracteres)
-- descricao (texto, opcional, máx 200 caracteres)
-- data_cadastro (timestamp, preenchido automaticamente)
-- data_atualizacao (timestamp, atualizado ao modificar)
-```
+**Tabela**: `categoria` (id, nome único 3-50 chars, descricao opcional 200 chars, timestamps)
 
 ### Arquivos que Vamos Criar
 
@@ -282,82 +169,13 @@ OBTER_POR_NOME = """
 
 ### Explicação Detalhada
 
-#### CREATE TABLE
+**CREATE TABLE**: `IF NOT EXISTS` evita erro. `id` com `AUTOINCREMENT`, `nome` com `UNIQUE NOT NULL`, `data_cadastro` com `DEFAULT CURRENT_TIMESTAMP`.
 
-```sql
-CREATE TABLE IF NOT EXISTS categoria (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT UNIQUE NOT NULL,
-    descricao TEXT,
-    data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    data_atualizacao TIMESTAMP
-)
-```
+**Placeholders `?`**: Previnem SQL Injection. Sempre use `cursor.execute(SQL, (valor1, valor2))` em vez de f-strings.
 
-- `IF NOT EXISTS`: Cria apenas se a tabela não existir (evita erro)
-- `id INTEGER PRIMARY KEY AUTOINCREMENT`:
-  - Chave primária que incrementa automaticamente (1, 2, 3...)
-- `nome TEXT UNIQUE NOT NULL`:
-  - `UNIQUE`: Não permite nomes duplicados
-  - `NOT NULL`: Campo obrigatório
-- `descricao TEXT`: Campo opcional (pode ser vazio)
-- `data_cadastro TIMESTAMP DEFAULT CURRENT_TIMESTAMP`:
-  - Preenche automaticamente com a data/hora atual
-- `data_atualizacao TIMESTAMP`: Preencheremos manualmente ao atualizar
+**UPDATE**: Usa `CURRENT_TIMESTAMP` para `data_atualizacao`. Sempre com `WHERE id=?`.
 
-#### INSERT
-
-```sql
-INSERT INTO categoria (nome, descricao)
-VALUES (?, ?)
-```
-
-- Os `?` são **placeholders** (espaços reservados)
-- Na hora de executar, substituímos pelos valores reais
-- **Isso previne SQL Injection!** ⚠️
-
-Exemplo de uso seguro:
-```python
-cursor.execute(INSERIR, ("Tecnologia", "Artigos sobre tecnologia"))
-```
-
-Exemplo INSEGURO (nunca faça!):
-```python
-# ❌ VULNERÁVEL A SQL INJECTION
-cursor.execute(f"INSERT INTO categoria VALUES ('{nome}')")
-```
-
-#### UPDATE
-
-```sql
-UPDATE categoria
-SET nome=?, descricao=?, data_atualizacao=CURRENT_TIMESTAMP
-WHERE id=?
-```
-
-- Atualiza nome e descrição
-- Preenche automaticamente `data_atualizacao` com hora atual
-- `WHERE id=?`: Garante que atualizamos apenas o registro correto
-
-#### DELETE
-
-```sql
-DELETE FROM categoria WHERE id=?
-```
-
-- Remove apenas o registro com o ID especificado
-- **Cuidado**: Não tem "desfazer"!
-
-#### SELECT
-
-```sql
-SELECT id, nome, descricao, data_cadastro, data_atualizacao
-FROM categoria
-ORDER BY nome
-```
-
-- Lista todos os campos que precisamos
-- `ORDER BY nome`: Retorna em ordem alfabética
+**SELECT**: Lista campos explícitos. `ORDER BY nome` retorna alfabeticamente.
 
 ### ✅ Checkpoint
 
@@ -383,30 +201,11 @@ Criar uma classe Python que representa uma Categoria com todos os seus atributos
 
 ### Por que precisamos disso?
 
-Imagine que você tem uma categoria. Como representá-la no código?
-
-**Opção 1: Usar dicionário** ❌
-```python
-categoria = {
-    "id": 1,
-    "nome": "Tecnologia",
-    "descricao": "Artigos sobre tecnologia"
-}
-```
-Problema: Sem validação de tipo, fácil errar o nome das chaves
-
-**Opção 2: Usar Model (classe)** ✅
-```python
-categoria = Categoria(
-    id=1,
-    nome="Tecnologia",
-    descricao="Artigos sobre tecnologia"
-)
-```
-Vantagens:
-- O editor autocompleta os campos
-- Erros de digitação são detectados
-- Podemos adicionar métodos úteis
+Usar **classes** em vez de dicionários oferece:
+- Autocompletar do editor
+- Detecção de erros de digitação
+- Validação de tipos
+- Métodos úteis
 
 ### Arquivo a Criar
 
@@ -503,21 +302,7 @@ print(nova_categoria_bd.id)  # Mostra o ID gerado pelo BD
 
 ### ✅ Checkpoint
 
-Após criar este arquivo:
-
-1. Verifique se o arquivo está em `model/categoria_model.py`
-2. Teste criando uma categoria:
-
-```bash
-python -c "
-from model.categoria_model import Categoria
-c = Categoria(nome='Teste', descricao='Desc teste')
-print(f'Categoria criada: {c.nome}')
-print('OK!')
-"
-```
-
-Se aparecer a mensagem, está funcionando! 🎉
+Arquivo em `model/categoria_model.py`. Teste: `python -c "from model.categoria_model import Categoria; print(Categoria(nome='Teste', descricao='Desc').nome)"`
 
 ---
 
@@ -681,58 +466,19 @@ class Config:
 ```python
 from dtos.categoria_dto import CriarCategoriaDTO
 
-# Dados corretos
-dados = {
-    "nome": "Tecnologia",
-    "descricao": "Artigos sobre tecnologia"
-}
-
+dados = {"nome": "Tecnologia", "descricao": "Artigos sobre tecnologia"}
 dto = CriarCategoriaDTO(**dados)
 print(dto.nome)  # "Tecnologia"
-print(dto.descricao)  # "Artigos sobre tecnologia"
 ```
 
-#### Exemplo 2: Nome Muito Curto ❌
+#### Exemplo 2: Erro de Validação ❌
 
 ```python
-dados = {
-    "nome": "TI",  # Apenas 2 caracteres (mínimo é 3)
-    "descricao": "Desc"
-}
-
+dados = {"nome": "TI", "descricao": "Desc"}  # Nome com apenas 2 caracteres
 try:
     dto = CriarCategoriaDTO(**dados)
 except ValidationError as e:
-    print(e)
-    # Erro: Nome deve ter no mínimo 3 caracteres
-```
-
-#### Exemplo 3: Nome Muito Longo ❌
-
-```python
-dados = {
-    "nome": "A" * 100,  # 100 caracteres (máximo é 50)
-    "descricao": "Desc"
-}
-
-try:
-    dto = CriarCategoriaDTO(**dados)
-except ValidationError as e:
-    print(e)
-    # Erro: Nome deve ter no máximo 50 caracteres
-```
-
-#### Exemplo 4: Descrição Opcional ✅
-
-```python
-# Descrição vazia é permitida
-dados = {
-    "nome": "Esportes",
-    "descricao": ""
-}
-
-dto = CriarCategoriaDTO(**dados)
-print(dto.descricao)  # ""
+    print(e)  # Erro: Nome deve ter no mínimo 3 caracteres
 ```
 
 ### Por que Dois DTOs?
@@ -792,10 +538,6 @@ Criar um arquivo com todas as funções que acessam o banco de dados para realiz
 - Fornece uma interface simples para as outras camadas
 - Facilita trocar o banco de dados no futuro
 
-**Analogia**: Pense no repository como um **bibliotecário**:
-- Você pede um livro (categoria)
-- Ele busca na estante (banco de dados)
-- Você não precisa saber onde está guardado
 
 ### Arquivo a Criar
 
@@ -1014,163 +756,20 @@ def obter_por_nome(nome: str) -> Optional[Categoria]:
 
 ### Explicação Detalhada
 
-#### Context Manager: `with get_connection()`
+**Context Manager `with get_connection()`**: Garante abertura, commit/rollback automático e fechamento da conexão.
 
-```python
-with get_connection() as conn:
-    cursor = conn.cursor()
-    cursor.execute(SQL_QUERY, parametros)
-```
+**Funções principais**:
+- `criar_tabela()`: Executa SQL `CREATE TABLE IF NOT EXISTS`
+- `inserir()`: Usa `cursor.lastrowid` para obter ID gerado
+- `alterar()` e `excluir()`: Retornam `cursor.rowcount > 0` (True se afetou linhas)
+- `obter_por_id()` e `obter_por_nome()`: Usam `cursor.fetchone()`
+- `obter_todos()`: Usa `cursor.fetchall()` com list comprehension
 
-O `with` garante que:
-1. Conexão é aberta
-2. Se tudo der certo → `COMMIT` automático (salva)
-3. Se der erro → `ROLLBACK` automático (desfaz)
-4. Conexão é fechada
-
-**Sem o `with`, teríamos que fazer manualmente**:
-```python
-conn = sqlite3.connect("dados.db")
-try:
-    cursor = conn.cursor()
-    cursor.execute(...)
-    conn.commit()
-except:
-    conn.rollback()
-finally:
-    conn.close()
-```
-
-Muito mais trabalhoso! O `with` simplifica tudo isso.
-
-#### Função: `criar_tabela()`
-
-```python
-def criar_tabela():
-    with get_connection() as conn:
-        cursor = conn.cursor()
-        cursor.execute(CRIAR_TABELA)
-```
-
-- Executa a query `CRIAR_TABELA` (definida no Passo 1)
-- Deve ser chamada quando o sistema inicia
-- `CREATE TABLE IF NOT EXISTS` garante que não dá erro se já existir
-
-#### Função: `inserir(categoria)`
-
-```python
-cursor.execute(INSERIR, (categoria.nome, categoria.descricao))
-```
-
-- Executa a query `INSERIR` com os valores da categoria
-- `(categoria.nome, categoria.descricao)` → Tupla com valores para os `?`
-
-```python
-if cursor.lastrowid:
-    categoria.id = cursor.lastrowid
-    return categoria
-```
-
-- `lastrowid`: Pega o ID gerado pelo `AUTOINCREMENT`
-- Preenche o ID no objeto categoria
-- Retorna a categoria com ID preenchido
-
-#### Função: `alterar(categoria)`
-
-```python
-cursor.execute(ALTERAR, (categoria.nome, categoria.descricao, categoria.id))
-return cursor.rowcount > 0
-```
-
-- `rowcount`: Número de linhas afetadas
-- Se `> 0`, significa que atualizou algum registro
-- Se `= 0`, não encontrou registro com aquele ID
-
-#### Função: `excluir(id)`
-
-```python
-cursor.execute(EXCLUIR, (id,))
-return cursor.rowcount > 0
-```
-
-- Nota: `(id,)` → Tupla com 1 elemento (vírgula é obrigatória!)
-- Retorna `True` se excluiu, `False` se não encontrou
-
-#### Funções de Busca
-
-```python
-row = cursor.fetchone()  # Busca 1 linha
-rows = cursor.fetchall()  # Busca todas as linhas
-```
-
-- `fetchone()`: Retorna uma linha ou `None`
-- `fetchall()`: Retorna lista de linhas (pode ser vazia `[]`)
-
-```python
-if row:
-    return Categoria(
-        id=row["id"],
-        nome=row["nome"],
-        # ...
-    )
-```
-
-- `row["id"]`: Acessa coluna por nome (graças ao row_factory)
-- Cria objeto `Categoria` com os dados do banco
-
-#### List Comprehension
-
-```python
-return [
-    Categoria(...)
-    for row in rows
-]
-```
-
-Equivalente a:
-```python
-categorias = []
-for row in rows:
-    cat = Categoria(...)
-    categorias.append(cat)
-return categorias
-```
-
-Mais compacto e pythônico! 🐍
+**Acesso a colunas**: `row["id"]` funciona graças ao `row_factory` configurado em `db_util.py`
 
 ### ✅ Checkpoint
 
-Após criar este arquivo:
-
-1. Verifique se o arquivo está em `repo/categoria_repo.py`
-2. Teste as funções:
-
-```bash
-python -c "
-from repo import categoria_repo
-from model.categoria_model import Categoria
-
-# Cria tabela
-categoria_repo.criar_tabela()
-print('✅ Tabela criada')
-
-# Insere categoria
-nova = Categoria(nome='Teste', descricao='Descrição teste')
-resultado = categoria_repo.inserir(nova)
-if resultado and resultado.id:
-    print(f'✅ Categoria inserida com ID: {resultado.id}')
-
-    # Lista todas
-    todas = categoria_repo.obter_todos()
-    print(f'✅ Total de categorias: {len(todas)}')
-else:
-    print('❌ Erro ao inserir')
-
-print('OK!')
-"
-```
-
-Se tudo funcionar, avance para o próximo passo! 🎉
+Teste: `python -c "from repo import categoria_repo; from model.categoria_model import Categoria; categoria_repo.criar_tabela(); print(categoria_repo.inserir(Categoria(nome='Teste', descricao='Desc')).id)"`
 
 ---
 
@@ -1298,11 +897,6 @@ Criar os endpoints HTTP que receberão as requisições do navegador e responder
 - Chamam o Repository para acessar/modificar dados
 - Retornam páginas HTML ou fazem redirects
 
-**Analogia**: As routes são como **garçons** em um restaurante:
-- Cliente faz pedido → Garçom recebe
-- Garçom passa para cozinha → Repository acessa BD
-- Cozinha prepara → Dados são processados
-- Garçom entrega → HTML é retornado
 
 ### ⚠️ IMPORTANTE: Proteção CSRF
 
@@ -1502,54 +1096,24 @@ async def post_cadastrar(
 
 #### ⭐ Padrão FormValidationError (MUITO IMPORTANTE!)
 
-O `FormValidationError` é um **padrão fundamental** usado em todo o SimpleBlog para tratamento de erros de validação. Ele simplifica drasticamente o código!
+O `FormValidationError` é um **padrão fundamental** usado em todo o SimpleBlog. Quando você faz `raise FormValidationError(...)`, um **handler global** (`util/exception_handlers.py`) automaticamente:
 
-**Sem este padrão** (antigamente):
-```python
-except ValidationError as e:
-    # Processar erros manualmente
-    erros = {}
-    for error in e.errors():
-        campo = error['loc'][0]
-        erros[campo] = error['msg']
+1. Processa o `ValidationError` e extrai erros por campo
+2. Cria mensagem flash
+3. Renderiza o template com `erros` e `dados` para repopular o formulário
 
-    # Criar mensagem flash
-    informar_erro(request, "Há campos com erros")
-
-    # Re-renderizar template COM erros e dados
-    return templates.TemplateResponse(
-        "admin/categorias/cadastro.html",
-        {
-            "request": request,
-            "usuario_logado": usuario_logado,
-            "erros": erros,
-            "dados": {"nome": nome, "descricao": descricao}
-        }
-    )
-```
-
-**Com FormValidationError** (atual):
+**Uso correto**:
 ```python
 except ValidationError as e:
     raise FormValidationError(
         validation_error=e,
         template_path="admin/categorias/cadastro.html",
         dados_formulario={"nome": nome, "descricao": descricao},
-        campo_padrao="nome"
+        campo_padrao="nome"  # Campo que receberá foco em caso de erro
     )
 ```
 
-**O que acontece nos bastidores?**
-
-1. Exception é capturada por um **handler global** (em `util/exception_handlers.py`)
-2. Handler processa o `ValidationError` e extrai erros por campo
-3. Handler cria mensagem flash automática
-4. Handler renderiza o template passando:
-   - `erros`: Dict com mensagens de erro (`{"nome": "muito curto"}`)
-   - `dados`: Dict com valores do formulário (para repopular)
-   - `request`, `usuario_logado`, etc.
-
-**Resultado**: Você economiza ~15 linhas de código por endpoint! 🎉
+**Resultado**: Você economiza ~15 linhas de código por endpoint!
 
 ### Código Completo - Parte 4: Endpoints de Edição
 
@@ -2015,58 +1579,15 @@ mkdir -p templates/admin/categorias
 
 ### Explicação Detalhada
 
-#### Estrutura com Card Bootstrap
+#### Classes Bootstrap Importantes
 
-```html
-<div class="card shadow-sm">
-    <div class="card-body">
-        <!-- Conteúdo -->
-    </div>
-</div>
-```
+**Layout**: `card shadow-sm`, `row`, `col-12` (grid 12 colunas)
 
-- **Card**: Componente Bootstrap que cria um container com borda e sombra
-- `shadow-sm`: Adiciona sombra leve para dar profundidade
-- Padrão usado em todas as páginas admin do SimpleBlog para consistência visual
+**Tabela**: `table table-hover align-middle mb-0`, `table-light` (cabeçalho)
 
-#### Título com Ícone
+**Botões**: `btn btn-primary`, `btn-outline-primary`, `btn-group btn-group-sm`
 
-```html
-<h2><i class="bi bi-folder"></i> Gerenciar Categorias</h2>
-```
-
-- `bi bi-folder`: Ícone de pasta do Bootstrap Icons
-- Torna a interface mais visual e intuitiva
-- Cada seção do admin tem seu ícone característico
-
-#### Grid System do Bootstrap
-
-```html
-<div class="row">
-    <div class="col-12">
-        <!-- Conteúdo ocupa toda a largura -->
-    </div>
-</div>
-```
-
-- Sistema de grid responsivo (12 colunas)
-- `col-12`: Ocupa as 12 colunas (100% da largura)
-
-#### Tabela com Estilo Moderno
-
-```html
-<table class="table table-hover align-middle mb-0">
-    <thead class="table-light">
-        <th scope="col">Nome</th>
-    </thead>
-</table>
-```
-
-- `table-hover`: Destaca linha ao passar o mouse
-- `align-middle`: Alinha conteúdo verticalmente ao centro
-- `mb-0`: Remove margem inferior (porque está dentro do card)
-- `table-light`: Cabeçalho cinza claro (padrão SimpleBlog, mais suave que `table-dark`)
-- `scope="col"`: Melhora acessibilidade
+**Ícones**: `bi bi-folder`, `bi bi-pencil`, `bi bi-trash` (Bootstrap Icons)
 
 #### Filtro Jinja2 para Datas
 
@@ -2304,21 +1825,7 @@ O componente `alerta_erro.html` verifica se existe `erros.geral` no contexto e e
 {% endif %}
 ```
 
-**Detalhes importantes:**
-- **`erros is defined`**: Verifica se a variável `erros` existe (evita erro em GET)
-- **`erros.geral`**: Acessa a mensagem de erro geral
-- **`alert-dismissible`**: Permite fechar o alerta
-- **`btn-close`**: Botão para fechar o alerta
-- **`aria-label`**: Acessibilidade para leitores de tela
-
-**Quando é usado?**
-- Erros de banco de dados (ex: nome de categoria duplicado)
-- Erros de negócio (ex: categoria sendo usada em artigos)
-- Erros inesperados capturados pelo handler
-- **NÃO aparece no GET** (primeira renderização) pois `erros` não está definido
-- **Aparece no POST** quando há erro de validação e `erros.geral` existe
-
-**Sempre inclua em formulários!** É o padrão do SimpleBlog.
+**Quando aparece**: Erros de validação, banco de dados ou negócio. Não aparece no GET (primeira renderização), apenas no POST com erro. **Sempre inclua em formulários!**
 
 #### Import de Macro
 
@@ -2350,29 +1857,7 @@ Esta macro gera automaticamente:
 4. **Help text** (texto de ajuda abaixo do campo)
 5. **Valor pré-preenchido** (se formulário voltar com erro)
 
-**Equivalente manual** (muito mais código!):
-
-```html
-<div class="mb-3">
-    <label for="nome" class="form-label">
-        Nome da Categoria <span class="text-danger">*</span>
-    </label>
-    <input
-        type="text"
-        class="form-control {% if erros.nome %}is-invalid{% endif %}"
-        id="nome"
-        name="nome"
-        value="{{ dados.nome if dados else '' }}"
-        required
-        placeholder="Ex: Tecnologia...">
-    {% if erros.nome %}
-    <div class="invalid-feedback">{{ erros.nome }}</div>
-    {% endif %}
-    <small class="form-text text-muted">Texto de ajuda...</small>
-</div>
-```
-
-A macro economiza muito código! 🎉
+A macro gera automaticamente: label + input + validação + help text, economizando ~18 linhas de código por campo!
 
 #### Parâmetros da Macro `field`
 
@@ -2492,7 +1977,7 @@ Criar o formulário HTML para editar categorias existentes.
         </div>
 
         <div class="card shadow-sm">
-            <form method="POST" action="/admin/categorias/editar/{{ dados.id if dados.id is defined else categoria.id }}">
+            <form method="POST" action="/admin/categorias/editar/{{ dados.id if dados is defined and dados.id else categoria.id }}">
                 <div class="card-body p-4">
                     <div class="row">
                         <div class="col-12">
@@ -2507,7 +1992,7 @@ Criar o formulário HTML para editar categorias existentes.
                                 required=true,
                                 placeholder='Ex: Tecnologia, Esportes, Política...',
                                 help_text='Nome único para identificar a categoria (3-50 caracteres)',
-                                value=dados.nome if dados.nome is defined else categoria.nome
+                                value=dados.nome if dados is defined and dados.nome else categoria.nome
                             ) }}
                         </div>
 
@@ -2520,7 +2005,7 @@ Criar o formulário HTML para editar categorias existentes.
                                 placeholder='Descrição opcional da categoria...',
                                 help_text='Breve descrição sobre o que essa categoria abrange (máx 200 caracteres)',
                                 rows=3,
-                                value=dados.descricao if dados.descricao is defined else categoria.descricao
+                                value=dados.descricao if dados is defined and dados.descricao else categoria.descricao
                             ) }}
                         </div>
                     </div>
@@ -2544,107 +2029,21 @@ Criar o formulário HTML para editar categorias existentes.
 
 ### Diferenças em Relação ao Cadastro
 
-#### 1. Ícone do Título
+**1. Ícone**: `bi-folder-check` (edição) vs `bi-folder-plus` (cadastro)
 
-```html
-<h2 class="mb-0"><i class="bi bi-folder-check"></i> Editar Categoria</h2>
-```
+**2. Form Action com fallback**: `action="/admin/categorias/editar/{{ dados.id if dados is defined and dados.id else categoria.id }}"` - Usa `dados.id` em caso de erro de validação, senão `categoria.id`.
 
-- **`bi-folder-check`**: Ícone de "pasta com check" para edição
-- Diferente do cadastro que usa `bi-folder-plus`
+**3. Valores pré-preenchidos**: `value=dados.nome if dados is defined and dados.nome else categoria.nome`
+- GET: usa `categoria.nome` (banco de dados)
+- POST com erro: usa `dados.nome` (mantém o que usuário digitou - melhor UX)
 
-#### 2. Form Action Dinâmica com Fallback
+**ATENÇÃO - Sintaxe correta:**
+- ✅ **CORRETO**: `dados.campo if dados is defined and dados.campo else objeto.campo`
+- ❌ **ERRADO**: `dados.campo if dados.campo is defined else objeto.campo` → Causa erro!
 
-```html
-<form method="POST" action="/admin/categorias/editar/{{ dados.id if dados is defined and dados.id else categoria.id }}">
-```
+**Por quê?** Se `dados` não existe, acessar `dados.campo` causa erro antes de verificar `is defined`.
 
-**IMPORTANTE:** Esta é a forma correta de definir a action!
-
-- **Primeiro verifica**: `dados is defined` (se a variável existe)
-- **Depois acessa**: `dados.id` (se existir e tiver valor)
-- **Se não existir**: `categoria.id` (na primeira renderização)
-- **Por quê?** Quando há erro de validação, `categoria` pode não estar no contexto
-- **Exemplo de URL gerada**: `/admin/categorias/editar/5`
-
-**ATENÇÃO:** Sempre verifique `dados is defined` ANTES de acessar propriedades!
-- ❌ **ERRADO**: `dados.id if dados.id is defined` → Erro se `dados` não existir
-- ✅ **CORRETO**: `dados.id if dados is defined and dados.id` → Seguro
-
-**Sem o fallback:** Se houver erro de validação, a action seria `/admin/categorias/editar/` (sem ID) → ERRO 404!
-
-#### 3. Valores Pré-preenchidos com Fallback
-
-```html
-{{ field(
-    name='nome',
-    ...
-    value=dados.nome if dados is defined and dados.nome else categoria.nome
-) }}
-```
-
-**IMPORTANTE:** Este padrão é CRÍTICO para formulários de edição!
-
-**Sintaxe correta:**
-- ✅ **CORRETO**: `dados.nome if dados is defined and dados.nome else categoria.nome`
-- ❌ **ERRADO**: `dados.nome if dados.nome is defined else categoria.nome` → Erro se `dados` não existir!
-
-**Como funciona:**
-1. **Primeiro acesso** (GET):
-   - `dados` não existe (não está definido)
-   - Usa `categoria.nome` (valor do banco de dados)
-   - Campo exibe: "Tecnologia"
-
-2. **Erro de validação** (POST com erro):
-   - `dados` existe e `dados.nome` tem valor (o que o usuário digitou)
-   - Usa `dados.nome` (mantém o que o usuário digitou)
-   - Campo exibe: "Te" (valor inválido que o usuário tentou submeter)
-
-**Por quê?** Sem isso, ao ter erro de validação:
-- Os campos voltariam com valores do banco (perdendo o que o usuário digitou)
-- Usuário teria que redigitar TUDO novamente
-- Péssima UX (experiência do usuário)
-
-**Mesma lógica para todos os campos:**
-```html
-value=dados.descricao if dados is defined and dados.descricao else categoria.descricao
-```
-
-**Regra de ouro**: Sempre verifique `dados is defined` antes de acessar qualquer propriedade!
-
-#### 4. Texto do Botão
-
-```html
-<button type="submit" class="btn btn-primary">
-    <i class="bi bi-check-circle"></i> Salvar Alterações
-</button>
-```
-
-- **Texto**: "Salvar Alterações" em vez de "Cadastrar"
-- **Mesmo estilo**: `btn-primary` (mantém consistência)
-- **Mesmo ícone**: `bi-check-circle` (ação de confirmação)
-
-### Como a Route Passa os Dados
-
-Na route `get_editar()`:
-
-```python
-categoria = categoria_repo.obter_por_id(id)
-
-return templates.TemplateResponse(
-    "admin/categorias/editar.html",
-    {
-        "request": request,
-        "usuario_logado": usuario_logado,
-        "categoria": categoria  ← Objeto disponível no template
-    }
-)
-```
-
-No template, podemos acessar:
-- `{{ categoria.id }}`
-- `{{ categoria.nome }}`
-- `{{ categoria.descricao }}`
+**Regra**: **SEMPRE** verifique `dados is defined` ANTES de acessar propriedades!
 
 ### ✅ Checkpoint
 
@@ -2656,89 +2055,6 @@ No template, podemos acessar:
    - Ao salvar, volta para listagem com mensagem de sucesso
 
 ---
-
-## 📋 Resumo dos Padrões para Templates de Formulário
-
-### Estrutura Padrão (Cadastro e Edição)
-
-Todos os templates de formulário no SimpleBlog seguem esta estrutura:
-
-```html
-{% extends "base_privada.html" %}
-{% from "macros/form_fields.html" import field with context %}
-
-{% block titulo %}Título da Página{% endblock %}
-
-{% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <!-- Cabeçalho -->
-        <div class="d-flex align-items-center mb-4">
-            <h2 class="mb-0"><i class="bi bi-icon-name"></i> Título</h2>
-        </div>
-
-        <!-- Card com Formulário -->
-        <div class="card shadow-sm">
-            <form method="POST" action="/rota/acao">
-                <!-- Corpo: Campos do Formulário -->
-                <div class="card-body p-4">
-                    <div class="row">
-                        <div class="col-12">
-                            {% include "components/alerta_erro.html" %}
-                        </div>
-
-                        <div class="col-12 mb-3">
-                            {{ field(...) }}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Rodapé: Botões de Ação -->
-                <div class="card-footer p-4">
-                    <div class="d-flex gap-3">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-circle"></i> Ação Principal
-                        </button>
-                        <a href="/rota/listar" class="btn btn-secondary">
-                            <i class="bi bi-x-circle"></i> Cancelar
-                        </a>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-{% endblock %}
-```
-
-### Checklist de Padrões
-
-Ao criar um novo template de formulário, garanta que:
-
-- ✅ **Grid**: `<div class="row justify-content-center"><div class="col-lg-8">`
-- ✅ **Título**: `<h2 class="mb-0">` com ícone apropriado
-- ✅ **Card**: Classe `shadow-sm`
-- ✅ **Formulário**: Dentro do card, envolvendo body e footer
-- ✅ **Body**: `<div class="card-body p-4">`
-- ✅ **Footer**: `<div class="card-footer p-4">`
-- ✅ **Alerta**: `{% include "components/alerta_erro.html" %}` dentro de `<div class="col-12">`
-- ✅ **Campos**: Cada campo em `<div class="col-12 mb-3">`
-- ✅ **Botões**: `<div class="d-flex gap-3">` (sem justify-content-end)
-- ✅ **Ordem dos botões**: Primário primeiro, Secundário depois
-- ✅ **Ícones nos botões**: `bi-check-circle` para confirmar, `bi-x-circle` para cancelar
-
-### Ícones por Contexto
-
-| Contexto | Ícone | Código |
-|----------|-------|--------|
-| **Cadastrar** | 📁+ | `bi-folder-plus` |
-| **Editar** | 📁✓ | `bi-folder-check` |
-| **Listar** | 📁 | `bi-folder` |
-| **Confirmar** | ✓ | `bi-check-circle` |
-| **Cancelar** | ✗ | `bi-x-circle` |
-| **Adicionar** | + | `bi-plus-circle` |
-| **Editar (ação)** | ✏️ | `bi-pencil` |
-| **Excluir** | 🗑️ | `bi-trash` |
 
 ### 🎯 Regra de Consistência: Menu vs Título da Página
 
@@ -2807,113 +2123,24 @@ value=dados.campo if dados is defined and dados.campo else objeto.campo
 
 ## Passo 11: Adicionar Link no Menu
 
-### Objetivo
-
-Adicionar o link "Categorias" no menu de administração para facilitar a navegação.
-
-### Arquivo a Modificar
-
-📁 `templates/base_privada.html`
-
-### Mudança a Fazer
-
-Procure a seção do menu de administração. Deve haver algo como:
+Adicione em `templates/base_privada.html` após o item de Usuários:
 
 ```html
 <li class="nav-item">
-    <a class="nav-link" href="/admin/usuarios/listar">
-        <i class="bi bi-people"></i> Usuários
+    <a class="nav-link {{ 'active' if '/admin/categorias/' in request.path else '' }}"
+       href="/admin/categorias/listar">
+        <i class="bi bi-folder"></i> Categorias
     </a>
 </li>
 ```
 
-**Adicione** logo após esse item:
-
-```html
-<li class="nav-item">
-    <a class="nav-link" href="/admin/categorias/listar">
-        <i class="bi bi-tags"></i> Categorias
-    </a>
-</li>
-```
-
-### Explicação
-
-```html
-<li class="nav-item">
-    <a class="nav-link" href="/admin/categorias/listar">
-        <i class="bi bi-tags"></i> Categorias
-    </a>
-</li>
-```
-
-- `nav-item` e `nav-link`: Classes Bootstrap para itens de menu
-- `bi bi-tags`: Ícone de etiquetas (representa categorias)
-- `href="/admin/categorias/listar"`: Link para a página de listagem
-
-### Ícones Bootstrap Comuns
-
-| Ícone | Classe | Uso Comum |
-|-------|--------|-----------|
-| 👥 | `bi bi-people` | Usuários |
-| 📄 | `bi bi-file-earmark-text` | Artigos |
-| 🏷️ | `bi bi-tags` | Categorias/Tags |
-| 💬 | `bi bi-chat` | Comentários |
-| ⚙️ | `bi bi-gear` | Configurações |
-| 📊 | `bi bi-graph-up` | Estatísticas |
-
-### ✅ Checkpoint
-
-1. Reinicie a aplicação (ou apenas recarregue a página)
-2. Entre como administrador
-3. Verifique o menu lateral/superior
-4. Deve aparecer o item "Categorias" com ícone de etiqueta
-5. Clique nele → Deve ir para `/admin/categorias/listar`
+**Importante**: Use `bi-folder` (mesmo ícone do título da página de listagem).
 
 ---
 
 ## Passo 12: Adicionar Card no Dashboard
 
-### Objetivo
-
-Adicionar um card de acesso rápido ao CRUD de Categorias na página inicial (dashboard) do administrador.
-
-### Por que fazer isso?
-
-O dashboard é a página inicial que o administrador vê ao fazer login. Ter um card de acesso facilita a navegação e torna a interface mais intuitiva e profissional.
-
-### ⚠️ Importante: Ordem dos Cards
-
-Os cards no dashboard **DEVEM** seguir a mesma ordem dos itens no menu de navegação em `base_privada.html`. Isso mantém consistência na interface e facilita a navegação do usuário.
-
-**Ordem do menu de administração:**
-1. Dashboard
-2. Perfil
-3. **Chamados**
-4. **Usuários**
-5. **Categorias** ← Nosso novo módulo
-6. **Tema**
-7. **Auditoria**
-8. **Backup**
-
-### Arquivo a Modificar
-
-📁 `templates/dashboard.html`
-
-### Mudanças a Fazer
-
-Procure a seção de cards do administrador (após o card "Usuários"). A estrutura dos cards deve seguir essa ordem:
-
-1. **Chamados** (já existe)
-2. **Usuários** (já existe)
-3. **Categorias** ← Adicionar este
-4. **Tema** (já existe)
-5. **Auditoria** (já existe)
-6. **Backup** (já existe)
-
-#### Código a Adicionar
-
-Adicione o card de Categorias **entre o card de Usuários e o card de Tema**:
+Adicione em `templates/dashboard.html` **entre Usuários e Tema**:
 
 ```html
 <!-- Categorias -->
@@ -2935,83 +2162,7 @@ Adicione o card de Categorias **entre o card de Usuários e o card de Tema**:
 </div>
 ```
 
-### Explicação Detalhada
-
-#### Estrutura do Card
-
-```html
-<div class="col-md-4">
-```
-- Bootstrap grid: cada card ocupa 4 colunas (3 cards por linha em telas médias/grandes)
-
-```html
-<div class="card h-100 shadow-sm shadow-hover">
-```
-- `h-100`: Altura 100% para todos os cards ficarem alinhados
-- `shadow-sm`: Sombra suave
-- `shadow-hover`: Classe customizada para efeito hover
-
-```html
-<i class="bi bi-folder text-primary display-3"></i>
-```
-- `bi bi-folder`: Ícone de pasta (mesmo usado no menu)
-- `text-primary`: Cor azul primária do Bootstrap
-- `display-3`: Tamanho grande do ícone
-
-```html
-<a href="/admin/categorias/listar" class="btn btn-primary">
-```
-- Botão com cor primária (azul) que leva à listagem de categorias
-
-#### Escolha de Cores
-
-Cada módulo usa uma cor específica para identificação visual:
-
-| Módulo | Cor | Classe Bootstrap | Uso |
-|--------|-----|------------------|-----|
-| Chamados | Vermelho | `text-danger`, `btn-danger` | Urgência/Atenção |
-| Usuários | Verde | `text-success`, `btn-success` | Ação positiva |
-| **Categorias** | **Azul** | **`text-primary`, `btn-primary`** | **Organização** |
-| Tema | Cinza | `text-secondary`, `btn-secondary` | Personalização |
-| Auditoria | Amarelo | `text-warning`, `btn-warning` | Monitoramento |
-| Backup | Azul claro | `text-info`, `btn-info` | Informação/Segurança |
-
-### Consistência de Ícones
-
-**Regra importante**: O ícone usado no card DEVE ser o mesmo usado no menu de navegação.
-
-No nosso caso:
-- **Menu** (`base_privada.html`): `<i class="bi bi-folder"></i>`
-- **Card** (`dashboard.html`): `<i class="bi bi-folder text-primary display-3"></i>`
-
-Ambos usam `bi-folder` ✅
-
-### ✅ Checkpoint
-
-1. Salve o arquivo `dashboard.html`
-2. Recarregue a página do dashboard (não precisa reiniciar o servidor)
-3. Entre como administrador
-4. Verifique que os cards estão na ordem:
-   - Meu Perfil
-   - Chamados
-   - Usuários
-   - **Categorias** ← Novo!
-   - Tema
-   - Auditoria
-   - Backup
-5. Clique no card "Categorias"
-6. **Esperado**: Redireciona para `/admin/categorias/listar`
-
-### Dica de Manutenção
-
-Sempre que adicionar um novo módulo administrativo:
-
-1. ✅ Adicione item no **menu** (`base_privada.html`)
-2. ✅ Adicione **card no dashboard** (`dashboard.html`)
-3. ✅ Mantenha a **mesma ordem** em ambos
-4. ✅ Use o **mesmo ícone** em ambos
-
-Isso garante uma interface consistente e profissional!
+**Importante**: Cards devem seguir a mesma ordem do menu. Use `bi-folder` (mesmo ícone do menu).
 
 ---
 
@@ -3160,142 +2311,87 @@ Você implementou com sucesso um **CRUD completo e funcional** com:
 
 ### 2. Estrutura de Pastas
 
-```
-SimpleBlog/
-├── sql/              # Queries SQL
-├── model/            # Modelos de domínio (entidades)
-├── dtos/             # Data Transfer Objects (validação)
-├── repo/             # Repositories (acesso a dados)
-├── routes/           # Controllers (endpoints HTTP)
-├── templates/        # Views (HTML)
-│   ├── admin/        # Templates de admin
-│   └── macros/       # Componentes reutilizáveis
-└── util/             # Utilidades (auth, db, etc)
+```mermaid
+graph LR
+    A[SimpleBlog] --> B[sql/]
+    A --> C[model/]
+    A --> D[dtos/]
+    A --> E[repo/]
+    A --> F[routes/]
+    A --> G[templates/]
+    A --> H[util/]
+
+    G --> G1[admin/]
+    G --> G2[macros/]
+
+    B -.-> |Queries SQL| B1[categoria_sql.py]
+    C -.-> |Entidades| C1[categoria_model.py]
+    D -.-> |Validação| D1[categoria_dto.py]
+    E -.-> |Acesso a dados| E1[categoria_repo.py]
+    F -.-> |Endpoints HTTP| F1[admin_categorias_routes.py]
+
+    style B fill:#ffe1e1
+    style C fill:#f0e1ff
+    style D fill:#fff4e1
+    style E fill:#e1ffe1
+    style F fill:#e1f5ff
+    style G fill:#f5f5f5
+    style H fill:#ffe1f0
 ```
 
-### 3. Fluxo de Dados (Data Flow)
+### 3. Fluxo de Dados
 
-```
-Usuário preenche formulário
-        ↓
-Form POST → Route recebe dados
-        ↓
-Route valida com DTO
-        ↓
-DTO aprova ou rejeita
-        ↓
-Route chama Repository
-        ↓
-Repository executa SQL
-        ↓
-Database salva
-        ↓
-Repository retorna resultado
-        ↓
-Route redireciona com mensagem
-        ↓
-Usuário vê feedback
+```mermaid
+sequenceDiagram
+    participant U as Usuário
+    participant F as Formulário HTML
+    participant R as Route
+    participant D as DTO
+    participant Repo as Repository
+    participant DB as Database
+
+    U->>F: Preenche formulário
+    F->>R: POST /admin/categorias/cadastrar
+    R->>D: Valida dados
+    alt Dados válidos
+        D->>R: ✓ Dados aprovados
+        R->>Repo: inserir(categoria)
+        Repo->>DB: INSERT INTO categoria
+        DB-->>Repo: ID gerado
+        Repo-->>R: Categoria com ID
+        R-->>F: Redirect + Flash success
+        F-->>U: "Categoria cadastrada!"
+    else Dados inválidos
+        D->>R: ✗ ValidationError
+        R-->>F: Re-renderiza + erros
+        F-->>U: Campos com erro em vermelho
+    end
 ```
 
 ### 4. Tratamento de Erros
 
-#### Camadas de Validação
-
-1. **Frontend**: HTML5 validation (required, maxlength)
-2. **DTO**: Pydantic validation (tipos, tamanhos, formatos)
-3. **Route**: Business logic (duplicidade, permissões)
-4. **Database**: Constraints (UNIQUE, NOT NULL, FK)
-
-#### Exemplo de Erro
-
-```
-Usuário digita nome "AB"
-  ↓
-HTML5 não bloqueia (apenas 2 chars é válido em HTML)
-  ↓
-POST enviado
-  ↓
-DTO: ValidationError("Nome deve ter no mínimo 3 caracteres")
-  ↓
-FormValidationError capturada
-  ↓
-Handler re-renderiza formulário com erro
-  ↓
-Usuário vê campo vermelho e mensagem
-```
+**Camadas**: 1) HTML5 (required, maxlength), 2) DTO (Pydantic), 3) Route (business logic), 4) Database (constraints)
 
 ### 5. Segurança
 
-#### SQL Injection Prevention
+**SQL Injection**: Use placeholders `?` em vez de f-strings: `cursor.execute("... WHERE nome=?", (nome,))`
 
-```python
-# ✅ SEGURO (parameterized query)
-cursor.execute("SELECT * FROM categoria WHERE nome=?", (nome,))
+**XSS**: Jinja2 escapa automaticamente. Nunca use `|safe` com dados do usuário.
 
-# ❌ INSEGURO (string concatenation)
-cursor.execute(f"SELECT * FROM categoria WHERE nome='{nome}'")
-```
+**CSRF**: Formulários POST protegidos por sessão (automático).
 
-Se `nome = "'; DROP TABLE categoria; --"`:
-- Seguro → Busca literal por esse texto
-- Inseguro → Executa DROP TABLE! 💣
-
-#### XSS Prevention
-
-```html
-<!-- ✅ SEGURO (Jinja2 escapa automaticamente) -->
-{{ categoria.nome }}
-
-<!-- Se nome = "<script>alert('XSS')</script>" -->
-<!-- Renderiza como: &lt;script&gt;alert('XSS')&lt;/script&gt; -->
-
-<!-- ❌ INSEGURO (raw HTML) -->
-{{ categoria.nome|safe }}
-```
-
-#### CSRF Protection
-
-- Formulários POST são protegidos por sessão
-- Só aceita requisições do mesmo domínio
-
-#### Rate Limiting
-
-```python
-admin_categorias_limiter = RateLimiter(
-    max_tentativas=10,
-    janela_minutos=1,
-    nome="admin_categorias"
-)
-```
-
-Previne:
-- Brute force
-- Spam
-- DoS (Denial of Service)
+**Rate Limiting**: 10 tentativas/minuto por IP previne brute force e spam.
 
 ### 6. Padrões de Código
 
 #### Repository Pattern
 
-✅ **Com Repository**:
 ```python
-# Route
+# Route usa apenas a interface do repository
 categorias = categoria_repo.obter_todos()
 ```
 
-- Simples de usar
-- Fácil de testar (mock)
-- Pode trocar BD sem mudar a route
-
-❌ **Sem Repository**:
-```python
-# Route tem que saber SQL, conexão, etc.
-conn = sqlite3.connect("dados.db")
-cursor = conn.cursor()
-cursor.execute("SELECT * FROM categoria")
-rows = cursor.fetchall()
-conn.close()
-```
+**Vantagens**: Simples, testável (mock), desacoplado do banco de dados
 
 #### DTO Pattern
 
@@ -3310,14 +2406,6 @@ dto = CriarCategoriaDTO(nome=nome, descricao=descricao)
 - Mensagens de erro consistentes
 - Reutilizável
 
-❌ **Sem DTO**:
-```python
-if not nome or len(nome) < 3:
-    return "Nome inválido"
-if len(nome) > 50:
-    return "Nome muito longo"
-# Repetir isso em cada endpoint? ❌
-```
 
 ### 7. Comentários e Documentação
 
@@ -3349,17 +2437,14 @@ if cursor.lastrowid:
     categoria.id = cursor.lastrowid
 ```
 
-Use comentários para explicar **por que**, não **o que**.
-
-❌ Ruim:
+Use comentários para explicar **por que**, não **o que**:
 ```python
-# Incrementa i
-i += 1
-```
-
-✅ Bom:
-```python
+# ✅ Bom: explica o motivo
 # Pula o cabeçalho da primeira linha
+i += 1
+
+# ❌ Ruim: apenas descreve o código
+# Incrementa i
 i += 1
 ```
 
@@ -3369,50 +2454,15 @@ i += 1
 
 O SimpleBlog possui uma biblioteca completa de validadores reutilizáveis em `dtos/validators.py`. Aqui está a referência completa:
 
-### Validadores de Texto
+**Texto**: `validar_string_obrigatoria()`, `validar_comprimento()`, `validar_texto_minimo_palavras()`
 
-| Função | Parâmetros | Descrição | Exemplo |
-|--------|-----------|-----------|---------|
-| `validar_string_obrigatoria()` | `nome_campo`, `tamanho_minimo`, `tamanho_maximo`, `truncar` | Valida string obrigatória com tamanho | `validar_string_obrigatoria(nome_campo="Nome", tamanho_minimo=3, tamanho_maximo=50)` |
-| `validar_comprimento()` | `tamanho_minimo`, `tamanho_maximo`, `truncar` | Valida tamanho (permite vazia) | `validar_comprimento(tamanho_maximo=200)` |
-| `validar_texto_minimo_palavras()` | `min_palavras`, `tamanho_maximo`, `nome_campo` | Valida número mínimo de palavras | `validar_texto_minimo_palavras(min_palavras=2, tamanho_maximo=128, nome_campo="Título")` |
+**Identidade**: `validar_email()`, `validar_cpf()`, `validar_cnpj()`, `validar_telefone_brasileiro()`, `validar_cep()`
 
-### Validadores de Identidade
+**Segurança**: `validar_senha_forte()`, `validar_url()`
 
-| Função | Parâmetros | Descrição | Exemplo |
-|--------|-----------|-----------|---------|
-| `validar_email()` | - | Valida formato de e-mail | `validar_email()` |
-| `validar_cpf()` | `obrigatorio` | Valida CPF brasileiro | `validar_cpf(obrigatorio=True)` |
-| `validar_cnpj()` | `obrigatorio` | Valida CNPJ brasileiro | `validar_cnpj(obrigatorio=True)` |
-| `validar_telefone_brasileiro()` | `obrigatorio` | Valida telefone BR | `validar_telefone_brasileiro()` |
-| `validar_cep()` | `obrigatorio` | Valida CEP brasileiro | `validar_cep()` |
+**Numéricos**: `validar_id_positivo()`, `validar_decimal_positivo()`
 
-### Validadores de Segurança
-
-| Função | Parâmetros | Descrição | Exemplo |
-|--------|-----------|-----------|---------|
-| `validar_senha_forte()` | `tamanho_minimo` | Valida senha forte (maiúsc, minúsc, número, especial) | `validar_senha_forte(tamanho_minimo=8)` |
-| `validar_url()` | `obrigatorio`, `permitir_localhost` | Valida formato de URL | `validar_url(obrigatorio=True)` |
-
-### Validadores Numéricos
-
-| Função | Parâmetros | Descrição | Exemplo |
-|--------|-----------|-----------|---------|
-| `validar_id_positivo()` | `nome_campo`, `obrigatorio` | Valida ID > 0 | `validar_id_positivo(nome_campo="Categoria")` |
-| `validar_decimal_positivo()` | `nome_campo` | Valida decimal > 0 | `validar_decimal_positivo(nome_campo="Preço")` |
-
-### Validadores de Enum/Tipo
-
-| Função | Parâmetros | Descrição | Exemplo |
-|--------|-----------|-----------|---------|
-| `validar_tipo()` | `tipo_enum`, `nome_campo` | Valida se valor está no Enum | `validar_tipo(Perfil, nome_campo="Perfil")` |
-
-### Validadores de Data/Hora
-
-| Função | Parâmetros | Descrição | Exemplo |
-|--------|-----------|-----------|---------|
-| `validar_data_futura()` | `nome_campo` | Valida se data é futura | `validar_data_futura(nome_campo="Data Entrega")` |
-| `validar_data_passada()` | `nome_campo` | Valida se data é passada | `validar_data_passada(nome_campo="Data Nascimento")` |
+**Outros**: `validar_tipo()`, `validar_data_futura()`, `validar_data_passada()`
 
 ### Exemplo Completo de Uso
 
@@ -3854,128 +2904,6 @@ Use `dados is defined` ANTES de acessar qualquer propriedade:
 |---------|-----------|
 | `dados.id is defined` | ❌ Erro se `dados` não existir (tenta acessar `.id` de algo indefinido) |
 | `dados is defined and dados.id` | ✅ Seguro: verifica se `dados` existe antes de acessar `.id` |
-
----
-
-## Exercícios Propostos
-
-Agora que você domina CRUD, pratique implementando outros CRUDs!
-
-### Exercício 1: CRUD de Tags ⭐
-
-Implemente um CRUD de Tags com:
-- **Campos**: id, nome, cor (hex color)
-- **Validação**: nome 2-30 chars, cor formato #XXXXXX
-- **Extra**: Mostrar preview da cor na listagem
-
-<details>
-<summary>💡 Dica</summary>
-
-1. Copie os arquivos de categoria
-2. Substitua "categoria" por "tag" em todos os lugares
-3. Adicione campo `cor` na tabela e no Model
-4. Adicione validação de cor no DTO
-5. No template de listagem, adicione:
-   ```html
-   <td>
-       <span class="badge" style="background-color: {{ tag.cor }}">
-           {{ tag.nome }}
-       </span>
-   </td>
-   ```
-</details>
-
-### Exercício 2: CRUD de Autores ⭐⭐
-
-Implemente um CRUD de Autores com:
-- **Campos**: id, nome, biografia, email, foto_url
-- **Validação**: email válido, biografia máx 500 chars
-- **Extra**: Upload de foto de perfil
-
-### Exercício 3: Relacionamento Artigo-Categoria ⭐⭐⭐
-
-Adicione categorias aos artigos:
-1. Tabela `artigo_categoria` (muitos-para-muitos)
-2. Ao criar/editar artigo, selecione categorias
-3. Na listagem de artigos, mostre suas categorias
-4. Crie página pública: "Artigos da categoria X"
-
-### Exercício 4: Soft Delete ⭐⭐
-
-Implementar exclusão lógica:
-1. Adicione campo `excluido` (boolean) na tabela
-2. `excluir()` → Apenas marca como excluído
-3. `obter_todos()` → Filtra excluídos
-4. Crie rota "Lixeira" para recuperar
-
-### Exercício 5: Paginação ⭐⭐⭐
-
-Adicione paginação na listagem:
-1. Aceite parâmetro `?pagina=1` na URL
-2. `obter_todos()` → Aceite `limite` e `offset`
-3. Template → Botões "Anterior" e "Próximo"
-4. Mostre "Página X de Y"
-
-### Exercício 6: Busca e Filtros ⭐⭐⭐
-
-Adicione busca na listagem:
-1. Campo de busca no topo da tabela
-2. Aceite parâmetro `?busca=termo`
-3. SQL: `WHERE nome LIKE ?` com `%termo%`
-4. Mantenha busca ao paginar
-
-### Exercício 7: Exportar CSV ⭐⭐
-
-Adicione botão "Exportar CSV":
-1. Nova rota `/admin/categorias/exportar`
-2. Gere CSV com todas as categorias
-3. Retorne como download:
-   ```python
-   from fastapi.responses import StreamingResponse
-   ```
-
-### Exercício 8: Importar CSV ⭐⭐⭐
-
-Adicione formulário para importar categorias de CSV:
-1. Upload de arquivo
-2. Parse CSV com `csv` module
-3. Valide cada linha
-4. Insira no banco
-5. Retorne relatório (X inseridas, Y erros)
-
-### Exercício 9: Hierarquia de Categorias ⭐⭐⭐⭐
-
-Categorias com sub-categorias:
-1. Adicione campo `categoria_pai_id`
-2. Ao criar, selecione categoria pai (opcional)
-3. Na listagem, mostre hierarquia com indentação
-4. Crie função recursiva `obter_filhos()`
-
-### Exercício 10: Testes Automatizados ⭐⭐⭐⭐
-
-Escreva testes com pytest:
-1. Teste unitário: DTOs validam corretamente
-2. Teste unitário: Repository CRUD funciona
-3. Teste integração: Routes retornam status corretos
-4. Teste E2E: Selenium/Playwright testa UI
-
-<details>
-<summary>💡 Exemplo de teste</summary>
-
-```python
-import pytest
-from dtos.categoria_dto import CriarCategoriaDTO
-from pydantic import ValidationError
-
-def test_dto_valida_nome_curto():
-    with pytest.raises(ValidationError):
-        CriarCategoriaDTO(nome="AB", descricao="Teste")
-
-def test_dto_aceita_nome_valido():
-    dto = CriarCategoriaDTO(nome="Tecnologia", descricao="Desc")
-    assert dto.nome == "Tecnologia"
-```
-</details>
 
 ---
 
