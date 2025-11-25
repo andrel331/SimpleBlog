@@ -49,3 +49,7 @@ OBTER_POR_ID = """
     WHERE id=?
 """
 
+OBTER_QUANTIDADE = """
+    SELECT COUNT(*)
+    FROM artigo
+"""

@@ -39,6 +39,7 @@ from repo import (
     chat_sala_repo,
     chat_participante_repo,
     chat_mensagem_repo,
+    categoria_repo,
 )
 
 # ------------------------------------------------------------
