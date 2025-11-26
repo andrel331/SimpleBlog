@@ -1,0 +1,119 @@
+{% extends "base_publica.html" %}
+
+{% block titulo %}Artigos{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-newspaper"></i> Artigos</h2>
+        </div>
+
+        <!-- Barra de Busca e Filtros -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <form method="GET" action="/artigos" class="row g-3">
+                    <div class="col-md-5">
+                        <label for="q" class="form-label">Buscar</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input type="text" name="q" id="q" class="form-control"
+                                placeholder="Buscar por título..."
+                                value="{{ termo_busca }}">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="categoria" class="form-label">Categoria</label>
+                        <select name="categoria" id="categoria" class="form-select">
+                            <option value="0">Todas as categorias</option>
+                            {% for cat in categorias %}
+                            <option value="{{ cat.id }}" {% if categoria_selecionada == cat.id %}selected{% endif %}>
+                                {{ cat.nome }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="ordem" class="form-label">Ordenar por</label>
+                        <select name="ordem" id="ordem" class="form-select">
+                            <option value="recentes" {% if ordem_selecionada == 'recentes' %}selected{% endif %}>Mais recentes</option>
+                            <option value="antigos" {% if ordem_selecionada == 'antigos' %}selected{% endif %}>Mais antigos</option>
+                            <option value="visualizacoes" {% if ordem_selecionada == 'visualizacoes' %}selected{% endif %}>Mais lidos</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-filter"></i> Filtrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Lista de Artigos -->
+        {% if artigos %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for artigo in artigos %}
+            <div class="col">
+                <div class="card h-100 shadow-sm shadow-hover">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge bg-secondary">{{ artigo.categoria_nome or 'Sem categoria' }}</span>
+                            <small class="text-muted">
+                                <i class="bi bi-eye"></i> {{ artigo.qtde_visualizacoes or 0 }}
+                            </small>
+                        </div>
+                        <h5 class="card-title">{{ artigo.titulo }}</h5>
+                        <p class="card-text text-muted">
+                            {% if artigo.resumo %}
+                                {{ artigo.resumo[:150] }}{% if artigo.resumo|length > 150 %}...{% endif %}
+                            {% else %}
+                                {{ artigo.conteudo[:150]|striptags }}{% if artigo.conteudo|length > 150 %}...{% endif %}
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="bi bi-person"></i> {{ artigo.usuario_nome or 'Anônimo' }}
+                                <br>
+                                <i class="bi bi-calendar"></i> {{ artigo.data_publicacao|data_br if artigo.data_publicacao else artigo.data_cadastro|data_br }}
+                            </small>
+                            {% if usuario_logado %}
+                            <a href="/artigos/ler/{{ artigo.id }}" class="btn btn-sm btn-outline-primary">
+                                Ler mais <i class="bi bi-arrow-right"></i>
+                            </a>
+                            {% else %}
+                            <a href="/login?next=/artigos/ler/{{ artigo.id }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-lock"></i> Fazer login
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="mt-4 text-center text-muted">
+            <small>{{ artigos|length }} artigo(s) encontrado(s)</small>
+        </div>
+        {% else %}
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-search display-1 text-muted mb-3"></i>
+                <h4 class="text-muted">Nenhum artigo encontrado</h4>
+                {% if termo_busca or categoria_selecionada > 0 %}
+                <p class="text-muted">Tente ajustar seus filtros de busca.</p>
+                <a href="/artigos" class="btn btn-outline-primary">
+                    <i class="bi bi-x-circle"></i> Limpar filtros
+                </a>
+                {% else %}
+                <p class="text-muted">Ainda não há artigos publicados.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

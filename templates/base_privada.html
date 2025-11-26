@@ -83,6 +83,13 @@
                                href="/admin/backups/listar"><i class="bi bi-server"></i> Backup</a>
                         </li>
                     {% else %}
+                        {% if request.session.get('usuario_logado') and
+                              request.session.get('usuario_logado')['perfil'] == 'Autor' %}
+                        <li class="nav-item">
+                            <a class="nav-link {{ 'active' if '/artigos/meus' in request.path or '/artigos/cadastrar' in request.path or '/artigos/editar' in request.path else '' }}"
+                               href="/artigos/meus"><i class="bi bi-file-earmark-text"></i> Meus Artigos</a>
+                        </li>
+                        {% endif %}
                         <li class="nav-item">
                             <a class="nav-link {{ 'active' if '/tarefas/' in request.path else '' }}"
                                href="/tarefas/listar">Tarefas</a>

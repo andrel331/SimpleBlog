@@ -30,6 +30,7 @@ from util.seed_data import inicializar_dados
 # ------------------------------------------------------------
 from repo import (
     categoria_repo,
+    artigo_repo,
     usuario_repo,
     configuracao_repo,
     tarefa_repo,
@@ -56,6 +57,7 @@ from routes.chat_routes import router as chat_router
 from routes.public_routes import router as public_router
 from routes.examples_routes import router as examples_router
 from routes.admin_categorias_routes import router as admin_categorias_router
+from routes.artigos_routes import router as artigos_router
 
 
 # ------------------------------------------------------------
@@ -108,6 +110,7 @@ def create_app() -> FastAPI:
         chat_mensagem_repo.criar_tabela()
         indices_repo.criar_indices()
         categoria_repo.criar_tabela()
+        artigo_repo.criar_tabela()
         logger.info("✅ Tabelas e índices criados/verificados com sucesso")
 
         inicializar_dados()
@@ -132,6 +135,7 @@ def create_app() -> FastAPI:
         public_router,
         examples_router,
         admin_categorias_router,
+        artigos_router,
     ]
     for r in routers:
         app.include_router(r)
