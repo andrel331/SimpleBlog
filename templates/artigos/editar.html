@@ -34,32 +34,45 @@
                             {% include "components/alerta_erro.html" %}
                         </div>
 
-                        <div class="col-md-8 mb-3">
-                            <label for="titulo" class="form-label">Título do Artigo <span class="text-danger">*</span></label>
-                            <input type="text" name="titulo" id="titulo" class="form-control" required
-                                value="{{ dados_formulario.titulo if dados_formulario else artigo.titulo }}"
-                                placeholder="Digite um título atrativo para seu artigo...">
-                            <small class="form-text text-muted">O título deve ter entre 5 e 200 caracteres</small>
+                        <div class="col-md-8">
+                            {{ field(
+                                name='titulo',
+                                label='Título do Artigo',
+                                type='text',
+                                required=true,
+                                value=dados_formulario.titulo if dados_formulario else artigo.titulo,
+                                placeholder='Digite um título atrativo para seu artigo...',
+                                help_text='O título deve ter entre 5 e 200 caracteres'
+                            ) }}
                         </div>
 
-                        <div class="col-md-4 mb-3">
-                            <label for="categoria_id" class="form-label">Categoria <span class="text-danger">*</span></label>
-                            <select name="categoria_id" id="categoria_id" class="form-select" required>
-                                <option value="">Selecione uma categoria...</option>
-                                {% for cat in categorias %}
-                                <option value="{{ cat.id }}"
-                                    {% if (dados_formulario and dados_formulario.categoria_id == cat.id) or (not dados_formulario and artigo.categoria_id == cat.id) %}selected{% endif %}>
-                                    {{ cat.nome }}
-                                </option>
-                                {% endfor %}
-                            </select>
+                        <div class="col-md-4">
+                            {% set categorias_dict = {'': 'Selecione uma categoria...'} %}
+                            {% for cat in categorias %}
+                                {% set _ = categorias_dict.update({cat.id|string: cat.nome}) %}
+                            {% endfor %}
+                            {% set categoria_valor = dados_formulario.categoria_id if dados_formulario else artigo.categoria_id %}
+                            {{ field(
+                                name='categoria_id',
+                                label='Categoria',
+                                type='select',
+                                required=true,
+                                value=categoria_valor,
+                                options=categorias_dict
+                            ) }}
                         </div>
 
-                        <div class="col-12 mb-3">
-                            <label for="resumo" class="form-label">Resumo</label>
-                            <textarea name="resumo" id="resumo" class="form-control" rows="2"
-                                placeholder="Um breve resumo do artigo que será exibido na listagem...">{{ dados_formulario.resumo if dados_formulario else artigo.resumo }}</textarea>
-                            <small class="form-text text-muted">Opcional. Máximo de 500 caracteres.</small>
+                        <div class="col-12">
+                            {{ field(
+                                name='resumo',
+                                label='Resumo',
+                                type='textarea',
+                                required=false,
+                                value=dados_formulario.resumo if dados_formulario else artigo.resumo,
+                                placeholder='Um breve resumo do artigo que será exibido na listagem...',
+                                help_text='Opcional. Máximo de 500 caracteres.',
+                                rows=2
+                            ) }}
                         </div>
 
                         <div class="col-12 mb-3">
@@ -70,23 +83,20 @@
                             </small>
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label for="status_artigo" class="form-label">Status</label>
-                            <select name="status_artigo" id="status_artigo" class="form-select">
-                                {% set status_atual = dados_formulario.status_artigo if dados_formulario else artigo.status %}
-                                <option value="Rascunho" {% if status_atual == 'Rascunho' %}selected{% endif %}>
-                                    Rascunho - Salvar para continuar depois
-                                </option>
-                                <option value="Finalizado" {% if status_atual == 'Finalizado' %}selected{% endif %}>
-                                    Finalizado - Pronto para revisão
-                                </option>
-                                <option value="Publicado" {% if status_atual == 'Publicado' %}selected{% endif %}>
-                                    Publicado - Visível para todos
-                                </option>
-                                <option value="Pausado" {% if status_atual == 'Pausado' %}selected{% endif %}>
-                                    Pausado - Temporariamente indisponível
-                                </option>
-                            </select>
+                        <div class="col-md-6">
+                            {% set status_atual = dados_formulario.status_artigo if dados_formulario else artigo.status %}
+                            {{ field(
+                                name='status_artigo',
+                                label='Status',
+                                type='select',
+                                value=status_atual,
+                                options={
+                                    'Rascunho': 'Rascunho - Salvar para continuar depois',
+                                    'Finalizado': 'Finalizado - Pronto para revisão',
+                                    'Publicado': 'Publicado - Visível para todos',
+                                    'Pausado': 'Pausado - Temporariamente indisponível'
+                                }
+                            ) }}
                         </div>
 
                         <div class="col-md-6 mb-3">

@@ -45,16 +45,18 @@
                             ) }}
                         </div>
 
-                        <div class="col-md-4 mb-3">
-                            <label for="categoria_id" class="form-label">Categoria <span class="text-danger">*</span></label>
-                            <select name="categoria_id" id="categoria_id" class="form-select" required>
-                                <option value="">Selecione uma categoria...</option>
-                                {% for cat in categorias %}
-                                <option value="{{ cat.id }}" {% if dados_formulario and dados_formulario.categoria_id == cat.id %}selected{% endif %}>
-                                    {{ cat.nome }}
-                                </option>
-                                {% endfor %}
-                            </select>
+                        <div class="col-md-4">
+                            {% set categorias_dict = {'': 'Selecione uma categoria...'} %}
+                            {% for cat in categorias %}
+                                {% set _ = categorias_dict.update({cat.id|string: cat.nome}) %}
+                            {% endfor %}
+                            {{ field(
+                                name='categoria_id',
+                                label='Categoria',
+                                type='select',
+                                required=true,
+                                options=categorias_dict
+                            ) }}
                         </div>
 
                         <div class="col-12 mb-3">
@@ -77,19 +79,17 @@
                             </small>
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label for="status_artigo" class="form-label">Status</label>
-                            <select name="status_artigo" id="status_artigo" class="form-select">
-                                <option value="Rascunho" {% if not dados_formulario or dados_formulario.status_artigo == 'Rascunho' %}selected{% endif %}>
-                                    Rascunho - Salvar para continuar depois
-                                </option>
-                                <option value="Finalizado" {% if dados_formulario and dados_formulario.status_artigo == 'Finalizado' %}selected{% endif %}>
-                                    Finalizado - Pronto para revisão
-                                </option>
-                                <option value="Publicado" {% if dados_formulario and dados_formulario.status_artigo == 'Publicado' %}selected{% endif %}>
-                                    Publicado - Visível para todos
-                                </option>
-                            </select>
+                        <div class="col-md-6">
+                            {{ field(
+                                name='status_artigo',
+                                label='Status',
+                                type='select',
+                                options={
+                                    'Rascunho': 'Rascunho - Salvar para continuar depois',
+                                    'Finalizado': 'Finalizado - Pronto para revisão',
+                                    'Publicado': 'Publicado - Visível para todos'
+                                }
+                            ) }}
                         </div>
                     </div>
                 </div>

@@ -1,4 +1,5 @@
 {% extends "base_publica.html" %}
+{% from "macros/form_fields.html" import field with context %}
 
 {% block titulo %}Artigos{% endblock %}
 
@@ -12,36 +13,47 @@
         <!-- Barra de Busca e Filtros -->
         <div class="card shadow-sm mb-4">
             <div class="card-body">
-                <form method="GET" action="/artigos" class="row g-3">
+                <form method="GET" action="/artigos" class="row g-3 align-items-end">
                     <div class="col-md-5">
-                        <label for="q" class="form-label">Buscar</label>
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-search"></i></span>
-                            <input type="text" name="q" id="q" class="form-control"
-                                placeholder="Buscar por título..."
-                                value="{{ termo_busca }}">
-                        </div>
+                        {{ field(
+                            name='q',
+                            label='Buscar',
+                            type='search',
+                            value=termo_busca,
+                            placeholder='Buscar por título...',
+                            append_icon='bi-search',
+                            wrapper_class='mb-0'
+                        ) }}
                     </div>
                     <div class="col-md-3">
-                        <label for="categoria" class="form-label">Categoria</label>
-                        <select name="categoria" id="categoria" class="form-select">
-                            <option value="0">Todas as categorias</option>
-                            {% for cat in categorias %}
-                            <option value="{{ cat.id }}" {% if categoria_selecionada == cat.id %}selected{% endif %}>
-                                {{ cat.nome }}
-                            </option>
-                            {% endfor %}
-                        </select>
+                        {% set categorias_dict = {'0': 'Todas as categorias'} %}
+                        {% for cat in categorias %}
+                            {% set _ = categorias_dict.update({cat.id|string: cat.nome}) %}
+                        {% endfor %}
+                        {{ field(
+                            name='categoria',
+                            label='Categoria',
+                            type='select',
+                            value=categoria_selecionada,
+                            options=categorias_dict,
+                            wrapper_class='mb-0'
+                        ) }}
                     </div>
                     <div class="col-md-2">
-                        <label for="ordem" class="form-label">Ordenar por</label>
-                        <select name="ordem" id="ordem" class="form-select">
-                            <option value="recentes" {% if ordem_selecionada == 'recentes' %}selected{% endif %}>Mais recentes</option>
-                            <option value="antigos" {% if ordem_selecionada == 'antigos' %}selected{% endif %}>Mais antigos</option>
-                            <option value="visualizacoes" {% if ordem_selecionada == 'visualizacoes' %}selected{% endif %}>Mais lidos</option>
-                        </select>
+                        {{ field(
+                            name='ordem',
+                            label='Ordenar por',
+                            type='select',
+                            value=ordem_selecionada,
+                            options={
+                                'recentes': 'Mais recentes',
+                                'antigos': 'Mais antigos',
+                                'visualizacoes': 'Mais lidos'
+                            },
+                            wrapper_class='mb-0'
+                        ) }}
                     </div>
-                    <div class="col-md-2 d-flex align-items-end">
+                    <div class="col-md-2">
                         <button type="submit" class="btn btn-primary w-100">
                             <i class="bi bi-filter"></i> Filtrar
                         </button>
