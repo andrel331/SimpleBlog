@@ -106,11 +106,12 @@ def limpar_banco_dados():
             cursor = conn.cursor()
             # Verificar se tabelas existem antes de limpar
             cursor.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('chamado', 'chamado_interacao', 'usuario', 'configuracao')"
+                "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('chamado', 'chamado_interacao', 'usuario', 'configuracao', 'tarefa')"
             )
             tabelas_existentes = [row[0] for row in cursor.fetchall()]
 
             # Limpar apenas tabelas que existem (respeitando foreign keys)
+            # Tarefas tem FK para usuario, então limpar primeiro
             if "tarefa" in tabelas_existentes:
                 cursor.execute("DELETE FROM tarefa")
             # Limpar chamado_interacao antes de chamado (devido à FK)

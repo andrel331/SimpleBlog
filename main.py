@@ -15,7 +15,7 @@ from pathlib import Path
 # ------------------------------------------------------------
 from util.config import APP_NAME, SECRET_KEY, HOST, PORT, RELOAD, VERSION
 from util.logger_config import logger
-from util.csrf_protection import CSRFProtectionMiddleware
+from util.csrf_protection import MiddlewareProtecaoCSRF
 from util.exception_handlers import (
     http_exception_handler,
     validation_exception_handler,
@@ -69,7 +69,7 @@ def create_app() -> FastAPI:
     # Middlewares
     # ------------------------------------------------------------
     app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
-    app.add_middleware(CSRFProtectionMiddleware)
+    app.add_middleware(MiddlewareProtecaoCSRF)
     logger.info("✅ Middlewares registrados com sucesso")
 
     # ------------------------------------------------------------

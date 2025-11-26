@@ -15,7 +15,7 @@ from repo import categoria_repo
 from util.auth_decorator import requer_autenticacao
 from util.flash_messages import informar_sucesso, informar_erro
 from util.rate_limiter import RateLimiter, obter_identificador_cliente
-from util.exceptions import FormValidationError
+from util.exceptions import ErroValidacaoFormulario
 from util.perfis import Perfil
 from util.template_util import criar_templates
 
@@ -143,7 +143,7 @@ async def post_cadastrar(
             )
 
     except ValidationError as e:
-        raise FormValidationError(
+        raise ErroValidacaoFormulario(
             validation_error=e,
             template_path="admin/categorias/cadastro.html",
             dados_formulario={"nome": nome, "descricao": descricao},
@@ -246,7 +246,7 @@ async def post_editar(
             )
 
     except ValidationError as e:
-        raise FormValidationError(
+        raise ErroValidacaoFormulario(
             validation_error=e,
             template_path="admin/categorias/editar.html",
             dados_formulario={
