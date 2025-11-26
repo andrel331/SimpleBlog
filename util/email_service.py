@@ -3,8 +3,7 @@ import resend
 from typing import Optional
 from util.logger_config import logger
 
-
-class EmailService:
+class ServicoEmail:
     def __init__(self):
         self.api_key = os.getenv("RESEND_API_KEY")
         self.from_email = os.getenv("RESEND_FROM_EMAIL", "noreply@seudominio.com")
@@ -93,4 +92,4 @@ class EmailService:
 
 
 # Instância global
-email_service = EmailService()
+servico_email = ServicoEmail()

@@ -1,52 +1,71 @@
+# =============================================================================
+# Imports
+# =============================================================================
+
+# Standard library
+from datetime import datetime
+
+# Third-party
 from fastapi import APIRouter, Form, Request, status
 from fastapi.responses import RedirectResponse
 from pydantic import ValidationError
-from datetime import datetime
 
+# DTOs
 from dtos.auth_dto import LoginDTO, CadastroDTO, EsqueciSenhaDTO, RedefinirSenhaDTO
+
+# Models
 from model.usuario_model import Usuario
+
+# Repositories
 from repo import usuario_repo
+
+# Utilities
+from util.datetime_util import agora
+from util.email_service import servico_email
+from util.exceptions import ErroValidacaoFormulario
+from util.flash_messages import informar_sucesso, informar_erro
+from util.logger_config import logger
+from util.perfis import Perfil
+from util.rate_limiter import DynamicRateLimiter, obter_identificador_cliente
 from util.security import (
     criar_hash_senha,
     verificar_senha,
     gerar_token_redefinicao,
     obter_data_expiracao_token,
 )
-from util.email_service import email_service
-from util.flash_messages import informar_sucesso, informar_erro
 from util.template_util import criar_templates
-from util.logger_config import logger
-from util.exceptions import FormValidationError
-from util.perfis import Perfil
 from util.validation_helpers import verificar_email_disponivel
-from util.config import (
-    RATE_LIMIT_LOGIN_MAX,
-    RATE_LIMIT_LOGIN_MINUTOS,
-    RATE_LIMIT_CADASTRO_MAX,
-    RATE_LIMIT_CADASTRO_MINUTOS,
-    RATE_LIMIT_ESQUECI_SENHA_MAX,
-    RATE_LIMIT_ESQUECI_SENHA_MINUTOS,
-)
+
+# =============================================================================
+# Configuração do Router
+# =============================================================================
 
 router = APIRouter()
 templates = criar_templates("templates/auth")
 
-# Rate limiters globais
-from util.rate_limiter import RateLimiter, obter_identificador_cliente
+# =============================================================================
+# Rate Limiters
+# =============================================================================
 
-login_limiter = RateLimiter(
-    max_tentativas=RATE_LIMIT_LOGIN_MAX,
-    janela_minutos=RATE_LIMIT_LOGIN_MINUTOS,
+login_limiter = DynamicRateLimiter(
+    chave_max="rate_limit_login_max",
+    chave_minutos="rate_limit_login_minutos",
+    padrao_max=5,
+    padrao_minutos=5,
     nome="login",
 )
-cadastro_limiter = RateLimiter(
-    max_tentativas=RATE_LIMIT_CADASTRO_MAX,
-    janela_minutos=RATE_LIMIT_CADASTRO_MINUTOS,
+cadastro_limiter = DynamicRateLimiter(
+    chave_max="rate_limit_cadastro_max",
+    chave_minutos="rate_limit_cadastro_minutos",
+    padrao_max=3,
+    padrao_minutos=10,
     nome="cadastro",
 )
-esqueci_senha_limiter = RateLimiter(
-    max_tentativas=RATE_LIMIT_ESQUECI_SENHA_MAX,
-    janela_minutos=RATE_LIMIT_ESQUECI_SENHA_MINUTOS,
+esqueci_senha_limiter = DynamicRateLimiter(
+    chave_max="rate_limit_esqueci_senha_max",
+    chave_minutos="rate_limit_esqueci_senha_minutos",
+    padrao_max=1,
+    padrao_minutos=1,
     nome="esqueci_senha",
 )
 
@@ -83,7 +102,7 @@ async def post_login(
             )
             logger.warning(f"Rate limit excedido para IP: {ip}")
             erros = {
-                "geral": f"Muitas tentativas de login. Aguarde {RATE_LIMIT_LOGIN_MINUTOS} minuto(s)."
+                "geral": f"Muitas tentativas de login. Aguarde {login_limiter.janela_minutos} minuto(s)."
             }
             return templates.TemplateResponse(
                 "auth/login.html",
@@ -132,7 +151,7 @@ async def post_login(
         return RedirectResponse(redirect, status_code=status.HTTP_303_SEE_OTHER)
 
     except ValidationError as e:
-        raise FormValidationError(
+        raise ErroValidacaoFormulario(
             validation_error=e,
             template_path="auth/login.html",
             dados_formulario={**dados_formulario, "redirect": redirect},
@@ -176,7 +195,7 @@ async def post_cadastrar(
         if not cadastro_limiter.verificar(ip):
             informar_erro(
                 request,
-                f"Muitas tentativas de cadastro. Aguarde {RATE_LIMIT_CADASTRO_MINUTOS} minuto(s).",
+                f"Muitas tentativas de cadastro. Aguarde {cadastro_limiter.janela_minutos} minuto(s).",
             )
             logger.warning(f"Rate limit de cadastro excedido para IP: {ip}")
             return RedirectResponse("/cadastrar", status_code=status.HTTP_303_SEE_OTHER)
@@ -217,7 +236,7 @@ async def post_cadastrar(
             logger.info(f"Novo usuário cadastrado: {usuario.email}")
 
             # Enviar e-mail de boas-vindas
-            email_service.enviar_boas_vindas(usuario.email, usuario.nome)
+            servico_email.enviar_boas_vindas(usuario.email, usuario.nome)
 
             informar_sucesso(
                 request, "Cadastro realizado com sucesso! Faça login para continuar."
@@ -230,7 +249,7 @@ async def post_cadastrar(
             )
 
     except ValidationError as e:
-        raise FormValidationError(
+        raise ErroValidacaoFormulario(
             validation_error=e,
             template_path="auth/cadastro.html",
             dados_formulario=dados_formulario,
@@ -253,7 +272,7 @@ async def post_esqueci_senha(request: Request, email: str = Form()):
         if not esqueci_senha_limiter.verificar(ip):
             informar_erro(
                 request,
-                f"Muitas tentativas de recuperação de senha. Aguarde {RATE_LIMIT_ESQUECI_SENHA_MINUTOS} minuto(s).",
+                f"Muitas tentativas de recuperação de senha. Aguarde {esqueci_senha_limiter.janela_minutos} minuto(s).",
             )
             logger.warning(f"Rate limit de recuperação de senha excedido para IP: {ip}")
             return RedirectResponse(
@@ -278,7 +297,7 @@ async def post_esqueci_senha(request: Request, email: str = Form()):
             usuario_repo.atualizar_token(usuario.email, token, data_expiracao)
 
             # Enviar e-mail com link de recuperação
-            email_enviado = email_service.enviar_recuperacao_senha(
+            email_enviado = servico_email.enviar_recuperacao_senha(
                 usuario.email, usuario.nome, token
             )
 
@@ -297,7 +316,7 @@ async def post_esqueci_senha(request: Request, email: str = Form()):
         return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
 
     except ValidationError as e:
-        raise FormValidationError(
+        raise ErroValidacaoFormulario(
             validation_error=e,
             template_path="auth/esqueci_senha.html",
             dados_formulario=dados_formulario,
@@ -318,7 +337,7 @@ async def get_redefinir_senha(request: Request, token: str):
     # Verificar expiração
     try:
         data_token = datetime.fromisoformat(usuario.data_token)
-        if datetime.now() > data_token:
+        if agora() > data_token:
             informar_erro(
                 request, "Token expirado. Solicite uma nova recuperação de senha."
             )
@@ -362,7 +381,7 @@ async def post_redefinir_senha(
 
         try:
             data_token = datetime.fromisoformat(usuario.data_token)
-            if datetime.now() > data_token:
+            if agora() > data_token:
                 informar_erro(request, "Token expirado")
                 return RedirectResponse(
                     "/esqueci-senha", status_code=status.HTTP_303_SEE_OTHER
@@ -387,7 +406,7 @@ async def post_redefinir_senha(
         return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)
 
     except ValidationError as e:
-        raise FormValidationError(
+        raise ErroValidacaoFormulario(
             validation_error=e,
             template_path="auth/redefinir_senha.html",
             dados_formulario=dados_formulario,

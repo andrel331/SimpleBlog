@@ -15,8 +15,8 @@
     <!-- CSS Customizado -->
     <link rel="stylesheet" href="/static/css/custom.css">
 
-    <!-- Chat Widget CSS -->
-    <link rel="stylesheet" href="/static/css/chat-widget.css">
+    <!-- Widget de Chat CSS -->
+    <link rel="stylesheet" href="/static/css/widget-chat.css">
 
     {# Bloco que pode ser sobrescrito nas páginas filhas #}
     {% block head %}{% endblock %}
@@ -129,6 +129,12 @@
     <!-- Dados de mensagens (hidden) -->
     <script id="mensagens-data" type="application/json">
         {{ obter_mensagens(request) | tojson }}
+    </script>
+
+    <!-- Configurações globais da aplicação -->
+    <script>
+        // Delay configurável para auto-hide dos toasts
+        window.TOAST_AUTO_HIDE_DELAY_MS = {{ TOAST_AUTO_HIDE_DELAY_MS }};
     </script>
 
     <!-- Bootstrap 5.3.8 JS Bundle -->

@@ -8,25 +8,65 @@ Permite que usuários comuns:
 - Excluam chamados próprios
 """
 
+# =============================================================================
+# Imports
+# =============================================================================
+
+# Standard library
 from typing import Optional
+
+# Third-party
 from fastapi import APIRouter, Form, Request, status
 from fastapi.responses import RedirectResponse
 from pydantic import ValidationError
 
+# DTOs
 from dtos.chamado_dto import CriarChamadoDTO
 from dtos.chamado_interacao_dto import CriarInteracaoDTO
+
+# Models
 from model.chamado_model import Chamado, StatusChamado, PrioridadeChamado
 from model.chamado_interacao_model import ChamadoInteracao, TipoInteracao
-from util.datetime_util import agora
+
+# Repositories
 from repo import chamado_repo, chamado_interacao_repo
+
+# Utilities
 from util.auth_decorator import requer_autenticacao
-from util.template_util import criar_templates
+from util.datetime_util import agora
+from util.exceptions import ErroValidacaoFormulario
 from util.flash_messages import informar_sucesso, informar_erro
 from util.logger_config import logger
-from util.exceptions import FormValidationError
+from util.permission_helpers import verificar_propriedade
+from util.rate_limiter import DynamicRateLimiter, obter_identificador_cliente
+from util.repository_helpers import obter_ou_404
+from util.template_util import criar_templates
+
+# =============================================================================
+# Configuração do Router
+# =============================================================================
 
 router = APIRouter(prefix="/chamados")
 templates = criar_templates("templates/chamados")
+
+# =============================================================================
+# Rate Limiters
+# =============================================================================
+
+chamado_criar_limiter = DynamicRateLimiter(
+    chave_max="rate_limit_chamado_criar_max",
+    chave_minutos="rate_limit_chamado_criar_minutos",
+    padrao_max=5,
+    padrao_minutos=30,
+    nome="chamado_criar",
+)
+chamado_responder_limiter = DynamicRateLimiter(
+    chave_max="rate_limit_chamado_responder_max",
+    chave_minutos="rate_limit_chamado_responder_minutos",
+    padrao_max=10,
+    padrao_minutos=10,
+    nome="chamado_responder",
+)
 
 
 @router.get("/listar")
@@ -64,6 +104,24 @@ async def post_cadastrar(
 ):
     """Cadastra um novo chamado."""
     assert usuario_logado is not None
+
+    # Rate limiting por IP
+    ip = obter_identificador_cliente(request)
+    if not chamado_criar_limiter.verificar(ip):
+        informar_erro(
+            request,
+            "Muitas tentativas de criação de chamados. Aguarde alguns minutos.",
+        )
+        logger.warning(f"Rate limit excedido para criação de chamados - IP: {ip}")
+        return templates.TemplateResponse(
+            "chamados/cadastrar.html",
+            {
+                "request": request,
+                "erros": {
+                    "geral": "Muitas tentativas de criação de chamados. Aguarde alguns minutos."
+                },
+            },
+        )
 
     # Armazena os dados do formulário para reexibição em caso de erro
     dados_formulario = {
@@ -111,7 +169,7 @@ async def post_cadastrar(
         return RedirectResponse("/chamados/listar", status_code=status.HTTP_303_SEE_OTHER)
 
     except ValidationError as e:
-        raise FormValidationError(
+        raise ErroValidacaoFormulario(
             validation_error=e,
             template_path="chamados/cadastrar.html",
             dados_formulario=dados_formulario,
@@ -124,14 +182,25 @@ async def post_cadastrar(
 async def visualizar(request: Request, id: int, usuario_logado: Optional[dict] = None):
     """Exibe detalhes de um chamado específico com histórico de interações."""
     assert usuario_logado is not None
-    chamado = chamado_repo.obter_por_id(id)
 
-    # Verificar se chamado existe e pertence ao usuário
-    if not chamado or chamado.usuario_id != usuario_logado["id"]:
-        informar_erro(request, "Chamado não encontrado")
-        logger.warning(
-            f"Usuário {usuario_logado['id']} tentou acessar chamado {id} sem permissão"
-        )
+    # Obter chamado ou retornar 404
+    chamado = obter_ou_404(
+        chamado_repo.obter_por_id(id),
+        request,
+        "Chamado não encontrado",
+        "/chamados/listar"
+    )
+    if isinstance(chamado, RedirectResponse):
+        return chamado
+
+    # Verificar se usuário é proprietário do chamado
+    if not verificar_propriedade(
+        chamado,
+        usuario_logado["id"],
+        request,
+        "Você não tem permissão para acessar este chamado",
+        "/chamados/listar"
+    ):
         return RedirectResponse("/chamados/listar", status_code=status.HTTP_303_SEE_OTHER)
 
     # Marcar mensagens como lidas (apenas as de outros usuários)
@@ -157,11 +226,34 @@ async def post_responder(
     """Permite que o usuário adicione uma resposta/mensagem ao seu próprio chamado."""
     assert usuario_logado is not None
 
-    chamado = chamado_repo.obter_por_id(id)
+    # Rate limiting por IP
+    ip = obter_identificador_cliente(request)
+    if not chamado_responder_limiter.verificar(ip):
+        informar_erro(
+            request,
+            "Muitas tentativas de resposta em chamados. Aguarde alguns minutos.",
+        )
+        logger.warning(f"Rate limit excedido para resposta em chamados - IP: {ip}")
+        return RedirectResponse(f"/chamados/{id}/visualizar", status_code=status.HTTP_303_SEE_OTHER)
 
-    # Verificar se chamado existe e pertence ao usuário
-    if not chamado or chamado.usuario_id != usuario_logado["id"]:
-        informar_erro(request, "Chamado não encontrado")
+    # Obter chamado ou retornar 404
+    chamado = obter_ou_404(
+        chamado_repo.obter_por_id(id),
+        request,
+        "Chamado não encontrado",
+        "/chamados/listar"
+    )
+    if isinstance(chamado, RedirectResponse):
+        return chamado
+
+    # Verificar se usuário é proprietário do chamado
+    if not verificar_propriedade(
+        chamado,
+        usuario_logado["id"],
+        request,
+        "Você não tem permissão para responder a este chamado",
+        "/chamados/listar"
+    ):
         return RedirectResponse("/chamados/listar", status_code=status.HTTP_303_SEE_OTHER)
 
     # Armazena os dados do formulário para reexibição em caso de erro
@@ -196,7 +288,7 @@ async def post_responder(
         return RedirectResponse(f"/chamados/{id}/visualizar", status_code=status.HTTP_303_SEE_OTHER)
 
     except ValidationError as e:
-        raise FormValidationError(
+        raise ErroValidacaoFormulario(
             validation_error=e,
             template_path="chamados/visualizar.html",
             dados_formulario=dados_formulario,
@@ -209,14 +301,25 @@ async def post_responder(
 async def post_excluir(request: Request, id: int, usuario_logado: Optional[dict] = None):
     """Exclui um chamado do usuário (apenas se aberto e sem respostas de admin)."""
     assert usuario_logado is not None
-    chamado = chamado_repo.obter_por_id(id)
 
-    # Verificar se chamado existe e pertence ao usuário
-    if not chamado or chamado.usuario_id != usuario_logado["id"]:
-        informar_erro(request, "Chamado não encontrado")
-        logger.warning(
-            f"Usuário {usuario_logado['id']} tentou excluir chamado {id} sem permissão"
-        )
+    # Obter chamado ou retornar 404
+    chamado = obter_ou_404(
+        chamado_repo.obter_por_id(id),
+        request,
+        "Chamado não encontrado",
+        "/chamados/listar"
+    )
+    if isinstance(chamado, RedirectResponse):
+        return chamado
+
+    # Verificar se usuário é proprietário do chamado
+    if not verificar_propriedade(
+        chamado,
+        usuario_logado["id"],
+        request,
+        "Você não tem permissão para excluir este chamado",
+        "/chamados/listar"
+    ):
         return RedirectResponse("/chamados/listar", status_code=status.HTTP_303_SEE_OTHER)
 
     # Verificar se chamado está aberto

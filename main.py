@@ -22,7 +22,7 @@ from util.exception_handlers import (
     generic_exception_handler,
     form_validation_exception_handler,
 )
-from util.exceptions import FormValidationError
+from util.exceptions import ErroValidacaoFormulario
 from util.seed_data import inicializar_dados
 
 # ------------------------------------------------------------
@@ -39,7 +39,6 @@ from repo import (
     chat_sala_repo,
     chat_participante_repo,
     chat_mensagem_repo,
-    categoria_repo,
 )
 
 # ------------------------------------------------------------
@@ -78,7 +77,7 @@ def create_app() -> FastAPI:
     # ------------------------------------------------------------
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
-    app.add_exception_handler(FormValidationError, form_validation_exception_handler)
+    app.add_exception_handler(ErroValidacaoFormulario, form_validation_exception_handler)
     app.add_exception_handler(Exception, generic_exception_handler)
     logger.info("✅ Exception handlers configurados")
 

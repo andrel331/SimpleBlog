@@ -68,7 +68,7 @@
     </nav>
 
     <!-- Container para Toasts (bottom-right) -->
-    <div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-4 toast-offset"></div>
+    <div id="toast-container" class="toast-container position-fixed bottom-0 end-0 p-4 mb-5"></div>
 
     <!-- Chat Widget (apenas para usuários logados) -->
     {% if request.session.get('usuario_logado') %}
@@ -98,6 +98,12 @@
         {{ obter_mensagens(request) | tojson }}
     </script>
 
+    <!-- Configurações globais da aplicação -->
+    <script>
+        // Delay configurável para auto-hide dos toasts
+        window.TOAST_AUTO_HIDE_DELAY_MS = {{ TOAST_AUTO_HIDE_DELAY_MS }};
+    </script>
+
     <!-- Bootstrap 5.3.8 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -111,10 +117,10 @@
     <script src="/static/js/modal-alerta.js"></script>
 
     <!-- Script de Validação de Senha -->
-    <script src="/static/js/password-validator.js"></script>
+    <script src="/static/js/validador-senha.js"></script>
 
     <!-- Script de Máscaras de Input -->
-    <script src="/static/js/input-mask.js"></script>
+    <script src="/static/js/mascara-input.js"></script>
 
     <!-- Scripts do Chat (apenas para usuários logados) -->
     {% if request.session.get('usuario_logado') %}

@@ -1,23 +1,74 @@
 """
 Rotas para o sistema de chat em tempo real.
 """
+
+# =============================================================================
+# Imports
+# =============================================================================
+
+# Standard library
 import json
 import asyncio
+from typing import Optional
+
+# Third-party
 from fastapi import APIRouter, Request, status, HTTPException, Form
 from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import ValidationError
-from typing import Optional
 
+# DTOs
 from dtos.chat_dto import CriarSalaDTO, EnviarMensagemDTO
+
+# Repositories
 from repo import chat_sala_repo, chat_participante_repo, chat_mensagem_repo, usuario_repo
+
+# Utilities
 from util.auth_decorator import requer_autenticacao
-from util.chat_manager import chat_manager
-from util.foto_util import obter_caminho_foto_usuario
+from util.chat_manager import gerenciador_chat
 from util.datetime_util import agora
+from util.foto_util import obter_caminho_foto_usuario
 from util.logger_config import logger
 from util.perfis import Perfil
+from util.rate_limiter import DynamicRateLimiter, obter_identificador_cliente
+
+# =============================================================================
+# Configuração do Router
+# =============================================================================
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
+
+# =============================================================================
+# Rate Limiters
+# =============================================================================
+
+chat_mensagem_limiter = DynamicRateLimiter(
+    chave_max="rate_limit_chat_message_max",
+    chave_minutos="rate_limit_chat_message_minutos",
+    padrao_max=30,
+    padrao_minutos=1,
+    nome="chat_mensagem",
+)
+chat_sala_limiter = DynamicRateLimiter(
+    chave_max="rate_limit_chat_sala_max",
+    chave_minutos="rate_limit_chat_sala_minutos",
+    padrao_max=10,
+    padrao_minutos=10,
+    nome="chat_sala",
+)
+busca_usuarios_limiter = DynamicRateLimiter(
+    chave_max="rate_limit_busca_usuarios_max",
+    chave_minutos="rate_limit_busca_usuarios_minutos",
+    padrao_max=30,
+    padrao_minutos=1,
+    nome="busca_usuarios",
+)
+chat_listagem_limiter = DynamicRateLimiter(
+    chave_max="rate_limit_chat_listagem_max",
+    chave_minutos="rate_limit_chat_listagem_minutos",
+    padrao_max=60,
+    padrao_minutos=1,
+    nome="chat_listagem",
+)
 
 
 @router.get("/stream")
@@ -30,8 +81,8 @@ async def stream_mensagens(request: Request, usuario_logado: Optional[dict] = No
     usuario_id = usuario_logado["id"]
 
     async def event_generator():
-        # Conectar usuário ao ChatManager
-        queue = await chat_manager.connect(usuario_id)
+        # Conectar usuário ao GerenciadorChat
+        queue = await gerenciador_chat.conectar(usuario_id)
         try:
             while True:
                 # Aguardar mensagem na fila
@@ -47,7 +98,7 @@ async def stream_mensagens(request: Request, usuario_logado: Optional[dict] = No
             logger.info(f"[SSE] Conexão cancelada para usuário {usuario_id}")
         finally:
             # Desconectar ao fechar stream
-            await chat_manager.disconnect(usuario_id)
+            await gerenciador_chat.desconectar(usuario_id)
 
     return StreamingResponse(
         event_generator(),
@@ -70,6 +121,15 @@ async def criar_ou_obter_sala(
     """
     Cria ou obtém uma sala de chat entre o usuário logado e outro usuário.
     """
+    # Rate limiting por IP
+    ip = obter_identificador_cliente(request)
+    if not chat_sala_limiter.verificar(ip):
+        logger.warning(f"Rate limit excedido para criação de sala de chat - IP: {ip}")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Muitas tentativas de criação de salas. Aguarde alguns minutos."
+        )
+
     try:
         # Validar DTO
         dto = CriarSalaDTO(outro_usuario_id=outro_usuario_id)
@@ -124,6 +184,15 @@ async def listar_conversas(
     """
     Lista conversas do usuário (salas com última mensagem e contador de não lidas).
     """
+    # Rate limiting por IP
+    ip = obter_identificador_cliente(request)
+    if not chat_listagem_limiter.verificar(ip):
+        logger.warning(f"Rate limit excedido para listagem de conversas - IP: {ip}")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Muitas requisições de listagem. Aguarde alguns minutos."
+        )
+
     usuario_id = usuario_logado["id"]
 
     # Obter todas as participações do usuário
@@ -198,6 +267,15 @@ async def listar_mensagens(
     """
     Lista mensagens de uma sala específica com paginação.
     """
+    # Rate limiting por IP
+    ip = obter_identificador_cliente(request)
+    if not chat_listagem_limiter.verificar(ip):
+        logger.warning(f"Rate limit excedido para listagem de mensagens - IP: {ip}")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Muitas requisições de listagem. Aguarde alguns minutos."
+        )
+
     usuario_id = usuario_logado["id"]
 
     # Verificar se usuário participa da sala
@@ -240,6 +318,15 @@ async def enviar_mensagem(
     """
     Envia uma mensagem em uma sala.
     """
+    # Rate limiting por IP
+    ip = obter_identificador_cliente(request)
+    if not chat_mensagem_limiter.verificar(ip):
+        logger.warning(f"Rate limit excedido para envio de mensagem no chat - IP: {ip}")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Muitas mensagens enviadas. Aguarde alguns minutos."
+        )
+
     try:
         # Validar DTO
         dto = EnviarMensagemDTO(sala_id=sala_id, mensagem=mensagem)
@@ -281,7 +368,7 @@ async def enviar_mensagem(
                 "lida_em": None
             }
         }
-        await chat_manager.broadcast_para_sala(dto.sala_id, mensagem_sse)
+        await gerenciador_chat.broadcast_para_sala(dto.sala_id, mensagem_sse)
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
@@ -329,7 +416,7 @@ async def marcar_como_lidas(
     chat_participante_repo.atualizar_ultima_leitura(sala_id, usuario_id)
 
     # Notificar via SSE para atualizar contador
-    await chat_manager.broadcast_para_sala(sala_id, {
+    await gerenciador_chat.broadcast_para_sala(sala_id, {
         "tipo": "atualizar_contador",
         "sala_id": sala_id
     })
@@ -352,6 +439,15 @@ async def buscar_usuarios(
     Exclui o próprio usuário e administradores dos resultados.
     Administradores só podem ser contactados via sistema de chamados.
     """
+    # Rate limiting por IP
+    ip = obter_identificador_cliente(request)
+    if not busca_usuarios_limiter.verificar(ip):
+        logger.warning(f"Rate limit excedido para busca de usuários - IP: {ip}")
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Muitas buscas. Aguarde alguns minutos."
+        )
+
     if len(q) < 2:
         return JSONResponse(
             status_code=status.HTTP_200_OK,
@@ -414,7 +510,7 @@ async def contar_nao_lidas_total(
 @router.get("/health")
 async def chat_health():
     """Health check do sistema de chat."""
-    estatisticas = chat_manager.obter_estatisticas()
+    estatisticas = gerenciador_chat.obter_estatisticas()
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
