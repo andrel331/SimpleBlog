@@ -34,10 +34,10 @@
                             </p>
                             {% endif %}
                             <small class="text-muted">
-                                <i class="bi bi-calendar3"></i> Criada em: {{ tarefa.data_criacao|format_data_hora }}
+                                <i class="bi bi-calendar3"></i> Criada em: {{ tarefa.data_criacao|formatar_data_hora }}
                                 {% if tarefa.concluida and tarefa.data_conclusao %}
                                 | <i class="bi bi-check2-circle"></i> Concluída em: {{
-                                tarefa.data_conclusao|format_data_hora }}
+                                tarefa.data_conclusao|formatar_data_hora }}
                                 {% endif %}
                             </small>
                         </div>
