@@ -8,40 +8,18 @@ Este módulo fornece funções para:
 - Verificar se um usuário é dono de uma entidade
 - Validar permissões de perfis
 - Lidar com acessos negados de forma padronizada
-
-Exemplo de uso:
-    from util.permission_helpers import verificar_propriedade, requer_perfis
-
-    @router.post("/tarefas/excluir/{id}")
-    @requer_autenticacao()
-    async def post_excluir(request: Request, id: int, usuario_logado: dict):
-        tarefa = tarefa_repo.obter_por_id(id)
-
-        # Verificar se usuário é dono da tarefa
-        if not verificar_propriedade(
-            tarefa,
-            usuario_logado.id,
-            request,
-            "Você não tem permissão para excluir esta tarefa",
-            "/tarefas/listar"
-        ):
-            return  # Já retornou RedirectResponse
-
-        # Usuário é dono, pode excluir
-        tarefa_repo.excluir(id)
-
-@version 1.0.0
-@author DefaultWebApp
 """
 
-from typing import Optional, List, Union, Any
-from fastapi import Request, status
-from fastapi.responses import RedirectResponse
+from typing import List, Any, TYPE_CHECKING
+from fastapi import Request
 
-from dtos.usuario_logado_dto import UsuarioLogado
+from model.usuario_logado_model import UsuarioLogado
 from util.flash_messages import informar_erro
 from util.logger_config import logger
 from util.perfis import Perfil
+
+if TYPE_CHECKING:
+    from model.usuario_logado_model import UsuarioLogado
 
 
 def verificar_propriedade(
@@ -51,7 +29,7 @@ def verificar_propriedade(
     mensagem_erro: str = "Você não tem permissão para acessar este recurso",
     redirect_url: str = "/",
     campo_usuario: str = "usuario_id",
-    log_tentativa: bool = True
+    log_tentativa: bool = True,
 ) -> bool:
     """
     Verifica se um usuário é proprietário de uma entidade.
@@ -70,21 +48,6 @@ def verificar_propriedade(
 
     Returns:
         bool: True se usuário é proprietário, False caso contrário
-
-    Example:
-        >>> tarefa = tarefa_repo.obter_por_id(id)
-        >>> if not verificar_propriedade(
-        ...     tarefa,
-        ...     usuario_logado.id,
-        ...     request,
-        ...     "Você não pode editar esta tarefa",
-        ...     "/tarefas/listar"
-        ... ):
-        ...     # Acesso negado, já mostrou erro e está redirecionando
-        ...     # IMPORTANTE: Você DEVE fazer return aqui
-        ...     return RedirectResponse(...)
-        >>> # Acesso permitido, continuar
-        >>> # ... lógica da rota ...
 
     Note:
         A função retorna bool, mas TEM EFEITO COLATERAL:
@@ -139,12 +102,12 @@ def verificar_propriedade(
 
 def verificar_propriedade_ou_admin(
     entity: Any,
-    usuario_logado: UsuarioLogado,
+    usuario_logado: 'UsuarioLogado',
     request: Request,
     mensagem_erro: str = "Você não tem permissão para acessar este recurso",
     redirect_url: str = "/",
     campo_usuario: str = "usuario_id",
-    log_tentativa: bool = True
+    log_tentativa: bool = True,
 ) -> bool:
     """
     Verifica se usuário é proprietário OU administrador.
@@ -153,7 +116,7 @@ def verificar_propriedade_ou_admin(
 
     Args:
         entity: Entidade a verificar
-        usuario_logado: Objeto UsuarioLogado com dados do usuário logado
+        usuario_logado: Instância de UsuarioLogado
         request: Objeto Request do FastAPI
         mensagem_erro: Mensagem de erro a exibir
         redirect_url: URL para redirecionar se acesso negado
@@ -162,21 +125,9 @@ def verificar_propriedade_ou_admin(
 
     Returns:
         bool: True se usuário é proprietário OU admin, False caso contrário
-
-    Example:
-        >>> chamado = chamado_repo.obter_por_id(id)
-        >>> if not verificar_propriedade_ou_admin(
-        ...     chamado,
-        ...     usuario_logado,
-        ...     request,
-        ...     "Você não pode acessar este chamado",
-        ...     "/chamados/listar"
-        ... ):
-        ...     return RedirectResponse("/chamados/listar", status_code=status.HTTP_303_SEE_OTHER)
-        >>> # Usuário é dono OU admin, pode continuar
     """
     # Se é admin, permitir acesso
-    if usuario_logado.perfil == Perfil.ADMIN.value:
+    if usuario_logado.is_admin():
         return True
 
     # Se não é admin, verificar propriedade normal
@@ -187,7 +138,7 @@ def verificar_propriedade_ou_admin(
         mensagem_erro,
         redirect_url,
         campo_usuario,
-        log_tentativa
+        log_tentativa,
     )
 
 
@@ -197,7 +148,7 @@ def verificar_perfil(
     request: Request,
     mensagem_erro: str = "Você não tem permissão para acessar esta funcionalidade",
     redirect_url: str = "/",
-    log_tentativa: bool = True
+    log_tentativa: bool = True,
 ) -> bool:
     """
     Verifica se o perfil do usuário está na lista de perfis permitidos.
@@ -212,22 +163,6 @@ def verificar_perfil(
 
     Returns:
         bool: True se perfil permitido, False caso contrário
-
-    Example:
-        >>> # Permitir apenas Admin e Vendedor
-        >>> if not verificar_perfil(
-        ...     usuario_logado.perfil,
-        ...     [Perfil.ADMIN.value, Perfil.VENDEDOR.value],
-        ...     request,
-        ...     "Apenas administradores e vendedores podem acessar",
-        ...     "/home"
-        ... ):
-        ...     return RedirectResponse("/home", status_code=status.HTTP_303_SEE_OTHER)
-        >>> # Perfil OK, continuar
-
-    Note:
-        Considere usar o decorator @requer_autenticacao([perfis]) ao invés desta função,
-        pois ele já faz esta verificação automaticamente.
     """
     if usuario_perfil not in perfis_permitidos:
         informar_erro(request, mensagem_erro)
@@ -250,7 +185,7 @@ def verificar_multiplas_condicoes(
     request: Request,
     mensagem_erro_padrao: str = "Você não tem permissão para acessar este recurso",
     redirect_url: str = "/",
-    operador: str = "AND"
+    operador: str = "AND",
 ) -> bool:
     """
     Verifica múltiplas condições de permissão com operador lógico.
@@ -264,22 +199,6 @@ def verificar_multiplas_condicoes(
 
     Returns:
         bool: True se condições satisfeitas, False caso contrário
-
-    Example:
-        >>> # Verificar se usuário é dono E status não é "Fechado"
-        >>> if not verificar_multiplas_condicoes([
-        ...     (chamado.usuario_id == usuario_logado.id, "Não é seu chamado"),
-        ...     (chamado.status != "Fechado", "Chamado já está fechado")
-        ... ], request, redirect_url="/chamados/listar"):
-        ...     return RedirectResponse("/chamados/listar", status_code=status.HTTP_303_SEE_OTHER)
-
-    Example com OR:
-        >>> # Verificar se usuário é dono OU é admin
-        >>> if not verificar_multiplas_condicoes([
-        ...     (tarefa.usuario_id == usuario_logado.id, "Não é sua tarefa"),
-        ...     (usuario_logado.perfil == Perfil.ADMIN.value, "Não é administrador")
-        ... ], request, redirect_url="/tarefas/listar", operador="OR"):
-        ...     return RedirectResponse("/tarefas/listar", status_code=status.HTTP_303_SEE_OTHER)
     """
     if operador == "AND":
         # Todas as condições devem ser True
@@ -303,92 +222,3 @@ def verificar_multiplas_condicoes(
 
     else:
         raise ValueError(f"Operador inválido: {operador}. Use 'AND' ou 'OR'.")
-
-
-# Exemplo de uso completo em uma rota:
-"""
-from util.permission_helpers import verificar_propriedade, verificar_propriedade_ou_admin
-from util.repository_helpers import obter_ou_404
-from repo import chamado_repo
-
-@router.post("/chamados/excluir/{id}")
-@requer_autenticacao()
-async def post_excluir_chamado(request: Request, id: int, usuario_logado: dict):
-    # Obter chamado ou 404
-    chamado = obter_ou_404(
-        chamado_repo.obter_por_id(id),
-        request,
-        "Chamado não encontrado",
-        "/chamados/listar"
-    )
-    if isinstance(chamado, RedirectResponse):
-        return chamado
-
-    # Verificar propriedade (apenas dono pode excluir)
-    if not verificar_propriedade(
-        chamado,
-        usuario_logado.id,
-        request,
-        "Você não pode excluir um chamado que não é seu",
-        "/chamados/listar"
-    ):
-        return RedirectResponse("/chamados/listar", status_code=status.HTTP_303_SEE_OTHER)
-
-    # Verificar se chamado não está fechado
-    if chamado.status == "Fechado":
-        informar_erro(request, "Não é possível excluir chamados fechados")
-        return RedirectResponse("/chamados/listar", status_code=status.HTTP_303_SEE_OTHER)
-
-    # Todas as verificações passaram, pode excluir
-    chamado_repo.excluir(id)
-    informar_sucesso(request, "Chamado excluído com sucesso")
-    return RedirectResponse("/chamados/listar", status_code=status.HTTP_303_SEE_OTHER)
-
-
-@router.get("/admin/chamados/{id}")
-@requer_autenticacao([Perfil.ADMIN.value])
-async def get_visualizar_qualquer_chamado(request: Request, id: int, usuario_logado: dict):
-    # Admin pode ver qualquer chamado
-    chamado = obter_ou_404(
-        chamado_repo.obter_por_id(id),
-        request,
-        "Chamado não encontrado",
-        "/admin/chamados/listar"
-    )
-    if isinstance(chamado, RedirectResponse):
-        return chamado
-
-    return templates.TemplateResponse("admin/chamados/visualizar.html", {
-        "request": request,
-        "chamado": chamado
-    })
-
-
-@router.get("/chamados/editar/{id}")
-@requer_autenticacao()
-async def get_editar_chamado(request: Request, id: int, usuario_logado: dict):
-    # Obter chamado
-    chamado = obter_ou_404(
-        chamado_repo.obter_por_id(id),
-        request,
-        "Chamado não encontrado",
-        "/chamados/listar"
-    )
-    if isinstance(chamado, RedirectResponse):
-        return chamado
-
-    # Dono OU admin pode editar
-    if not verificar_propriedade_ou_admin(
-        chamado,
-        usuario_logado,
-        request,
-        "Você não pode editar este chamado",
-        "/chamados/listar"
-    ):
-        return RedirectResponse("/chamados/listar", status_code=status.HTTP_303_SEE_OTHER)
-
-    return templates.TemplateResponse("chamados/editar.html", {
-        "request": request,
-        "chamado": chamado
-    })
-"""

@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 # DTOs e modelo
 from dtos.categoria_dto import CriarCategoriaDTO, AlterarCategoriaDTO
-from dtos.usuario_logado_dto import UsuarioLogado
+from model.usuario_logado_model import UsuarioLogado
 from model.categoria_model import Categoria
 
 # Repositório

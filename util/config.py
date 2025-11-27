@@ -6,7 +6,6 @@ do sistema em um único local, facilitando a manutenção e evitando duplicaçã
 """
 
 import os
-from pathlib import Path
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 
@@ -136,6 +135,8 @@ TIMEZONE = os.getenv("TIMEZONE", "America/Sao_Paulo")
 APP_TIMEZONE = ZoneInfo(TIMEZONE)
 
 # === Funções Helper para Leitura Híbrida (Database + .env) ===
+
+
 def obter_config_str(chave: str, padrao_env: str) -> str:
     """
     Obtém configuração com leitura híbrida: database primeiro, .env como fallback

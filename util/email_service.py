@@ -3,6 +3,7 @@ import resend
 from typing import Optional
 from util.logger_config import logger
 
+
 class ServicoEmail:
     def __init__(self):
         self.api_key = os.getenv("RESEND_API_KEY")
@@ -34,10 +35,8 @@ class ServicoEmail:
         }
 
         try:
-            email = resend.Emails.send(params)  # type: ignore[arg-type]
-            logger.info(
-                f"E-mail enviado para {para_email} - ID: {email.get('id', 'N/A')}"
-            )
+            email = resend.Emails.send(params)
+            logger.info(f"E-mail enviado para {para_email} - ID: {email.get('id', 'N/A')}")
             return True
         except Exception as e:
             logger.error(f"Erro ao enviar e-mail: {e}")

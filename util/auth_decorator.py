@@ -4,12 +4,19 @@ from functools import wraps
 from typing import List, Optional
 from util.logger_config import logger
 from util.flash_messages import informar_erro
-from dtos.usuario_logado_dto import UsuarioLogado
+from model.usuario_logado_model import UsuarioLogado
 
 
-def criar_sessao(request: Request, usuario: dict):
-    """Cria sessão de usuário"""
-    request.session["usuario_logado"] = usuario
+def criar_sessao(request: Request, usuario_logado: UsuarioLogado):
+    """
+    Cria sessão de usuário.
+
+    Args:
+        request: Objeto Request do FastAPI
+        usuario_logado: Instância de UsuarioLogado
+    """
+    request.session["usuario_logado"] = usuario_logado.to_dict()
+
 
 
 def destruir_sessao(request: Request):
@@ -18,26 +25,27 @@ def destruir_sessao(request: Request):
 
 
 def obter_usuario_logado(request: Request) -> Optional[UsuarioLogado]:
-    """Obtém usuário logado da sessão"""
+    """
+    Obtém usuário logado da sessão.
+
+    Returns:
+        Instância de UsuarioLogado ou None se não logado
+    """
     dados = request.session.get("usuario_logado")
-    if dados:
-        return UsuarioLogado(**dados)
-    return None
+    return UsuarioLogado.from_dict(dados)
+
 
 def esta_logado(request: Request) -> bool:
     """Verifica se usuário está logado"""
     return "usuario_logado" in request.session
 
+
 def requer_autenticacao(perfis_permitidos: Optional[List[str]] = None):
     """
-    Decorator para exigir autenticação e autorização
+    Decorator para exigir autenticação e autorização.
 
     Args:
         perfis_permitidos: Lista de perfis que podem acessar (None = qualquer logado)
-
-    Exemplo:
-        @requer_autenticacao([Perfil.ADMIN.value])
-        @requer_autenticacao()  # qualquer usuário logado
     """
     def decorator(func):
         @wraps(func)

@@ -112,8 +112,10 @@
     {% include 'components/modal_confirmacao.html' %}
     {% include 'components/modal_alerta.html' %}
 
-    <!-- Chat Widget -->
+    <!-- Chat Widget (apenas para usuários logados) -->
+    {% if request.session.get('usuario_logado') %}
     {% include 'components/chat_widget.html' %}
+    {% endif %}
 
     <!-- Footer -->
     <footer class="bg-light text-center text-muted py-3 mt-auto">
@@ -144,7 +146,16 @@
     <script src="/static/js/modal-alerta.js"></script>
     <script src="/static/js/validador-senha.js"></script>
     <script src="/static/js/mascara-input.js"></script>
+
+    <!-- Script de Auxiliares de Exclusão -->
+    <script src="/static/js/auxiliares-exclusao.js"></script>
+
+    <!-- Chat Widget JS (apenas para usuários logados) -->
+    {% if request.session.get('usuario_logado') %}
     <script src="/static/js/widget-chat.js" defer></script>
+    <script>
+        // Guardar ID do usuário logado no body para o chat
+        document.body.dataset.usuarioId = {{ request.session.get('usuario_logado')['id'] }};
 
     <!-- Script de inicialização -->
     <script>
@@ -161,6 +172,7 @@
             }
         });
     </script>
+    {% endif %}
 
     {# Bloco para inserir scripts adicionais nas páginas filhas #}
     {% block scripts %}{% endblock %}

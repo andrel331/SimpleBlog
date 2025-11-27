@@ -24,7 +24,7 @@ tests/
 ├── test_auth.py             # Testes de autenticação
 ├── test_perfil.py           # Testes de perfil do usuário
 ├── test_usuario.py          # Testes de dashboard do usuário
-├── test_tarefas.py          # Testes CRUD de tarefas
+├── test_categorias.py          # Testes CRUD de categorias
 ├── test_admin_usuarios.py   # Testes de administração de usuários
 ├── test_admin_backups.py    # Testes de backups
 ├── test_admin_configuracoes.py  # Testes de configurações
@@ -38,13 +38,13 @@ Cada arquivo de teste deve organizar testes em classes temáticas:
 
 ```python
 class TestListarTarefas:
-    """Testes de listagem de tarefas"""
+    """Testes de listagem de categorias"""
 
 class TestCriarTarefa:
-    """Testes de criação de tarefa"""
+    """Testes de criação de categoria"""
 
 class TestExcluirTarefa:
-    """Testes de exclusão de tarefa"""
+    """Testes de exclusão de categoria"""
 ```
 
 **Convenção**: Use o prefixo `Test` nas classes e agrupe testes relacionados.
@@ -377,22 +377,6 @@ assert_redirects_to(response, "/login")
 
 **SEMPRE teste isolamento de dados entre usuários:**
 
-```python
-# ✅ CORRETO - verifica isolamento
-def test_usuario_nao_ve_tarefas_de_outros(client, dois_usuarios, fazer_login):
-    usuario1, usuario2 = dois_usuarios
-
-    # Usuario 1 cria tarefa
-    fazer_login(usuario1["email"], usuario1["senha"])
-    client.post("/tarefas/cadastrar", data={"titulo": "Tarefa do Usuario 1"})
-    client.get("/logout")
-
-    # Usuario 2 não deve ver
-    fazer_login(usuario2["email"], usuario2["senha"])
-    response = client.get("/tarefas/listar")
-    assert "Tarefa do Usuario 1" not in response.text
-```
-
 ---
 
 ## 📛 Convenções de Nomenclatura
@@ -408,9 +392,6 @@ Padrão: `test_<acao>_<condicao>_<resultado_esperado>`
 def test_login_com_credenciais_validas_redireciona_para_dashboard():
     pass
 
-def test_criar_tarefa_sem_titulo_retorna_erro():
-    pass
-
 def test_usuario_nao_autenticado_nao_acessa_dashboard():
     pass
 
@@ -418,7 +399,7 @@ def test_usuario_nao_autenticado_nao_acessa_dashboard():
 def test_login():
     pass
 
-def test_tarefa():
+def test_categoria():
     pass
 
 def test_erro():
@@ -437,7 +418,7 @@ class TestListarUsuarios:
     """Testes de listagem de usuários"""
 
 class TestCriarTarefa:
-    """Testes de criação de tarefa"""
+    """Testes de criação de categoria"""
 
 class TestAutorizacao:
     """Testes de autorização e controle de acesso"""
@@ -537,42 +518,6 @@ def test_cliente_nao_acessa_area_admin(cliente_autenticado):
         assert location in ["/login", "/usuario", "/"]
 ```
 
-### Exemplo 3: Teste de Isolamento de Dados
-
-```python
-def test_usuario_nao_pode_excluir_tarefa_de_outro(client, dois_usuarios, fazer_login):
-    """Usuário não deve poder excluir tarefas de outros usuários."""
-
-    usuario1, usuario2 = dois_usuarios
-
-    # Usuario 1 cria tarefa
-    fazer_login(usuario1["email"], usuario1["senha"])
-    response = client.post("/tarefas/cadastrar", data={
-        "titulo": "Tarefa Privada",
-        "descricao": "Esta é minha tarefa"
-    }, follow_redirects=False)
-    assert_redirects_to(response, "/tarefas/listar")
-
-    # Obter ID da tarefa criada
-    from repo import tarefa_repo
-    tarefas = tarefa_repo.obter_por_usuario(usuario1["id"])  # Precisa ajustar
-    tarefa_id = tarefas[0].id
-
-    # Logout do usuario 1
-    client.get("/logout")
-
-    # Usuario 2 tenta excluir tarefa do usuario 1
-    fazer_login(usuario2["email"], usuario2["senha"])
-    response = client.post(f"/tarefas/{tarefa_id}/excluir", follow_redirects=False)
-
-    # Deve negar (redirect)
-    assert_redirects_to(response, "/tarefas/listar")
-
-    # Verificar que tarefa ainda existe
-    tarefa = tarefa_repo.obter_por_id(tarefa_id)
-    assert tarefa is not None
-```
-
 ### Exemplo 4: Teste com Fixtures Avançadas
 
 ```python
@@ -655,7 +600,7 @@ def test_login():
     pass
 
 @pytest.mark.crud
-def test_criar_tarefa():
+def test_criar_categoria():
     pass
 
 @pytest.mark.integration

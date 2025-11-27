@@ -12,10 +12,11 @@ from pydantic import ValidationError
 
 # DTOs
 from dtos.usuario_dto import CriarUsuarioDTO, AlterarUsuarioDTO
-from dtos.usuario_logado_dto import UsuarioLogado
+from model.usuario_logado_model import UsuarioLogado
 
 # Models
 from model.usuario_model import Usuario
+from model.usuario_logado_model import UsuarioLogado
 
 # Repositories
 from repo import usuario_repo
@@ -51,12 +52,14 @@ admin_usuarios_limiter = DynamicRateLimiter(
     nome="admin_usuarios",
 )
 
+
 @router.get("/")
 @requer_autenticacao([Perfil.ADMIN.value])
 async def index(request: Request, usuario_logado: Optional[UsuarioLogado] = None):
     """Redireciona para lista de usuários"""
     assert usuario_logado is not None
     return RedirectResponse("/admin/usuarios/listar", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+
 
 @router.get("/listar")
 @requer_autenticacao([Perfil.ADMIN.value])
@@ -69,6 +72,7 @@ async def listar(request: Request, usuario_logado: Optional[UsuarioLogado] = Non
         {"request": request, "usuarios": usuarios}
     )
 
+
 @router.get("/cadastrar")
 @requer_autenticacao([Perfil.ADMIN.value])
 async def get_cadastrar(request: Request, usuario_logado: Optional[UsuarioLogado] = None):
@@ -79,6 +83,7 @@ async def get_cadastrar(request: Request, usuario_logado: Optional[UsuarioLogado
         "admin/usuarios/cadastro.html",
         {"request": request, "perfis": perfis}
     )
+
 
 @router.post("/cadastrar")
 @requer_autenticacao([Perfil.ADMIN.value])
@@ -153,6 +158,7 @@ async def post_cadastrar(
             campo_padrao="senha",
         )
 
+
 @router.get("/editar/{id}")
 @requer_autenticacao([Perfil.ADMIN.value])
 async def get_editar(request: Request, id: int, usuario_logado: Optional[UsuarioLogado] = None):
@@ -182,6 +188,7 @@ async def get_editar(request: Request, id: int, usuario_logado: Optional[Usuario
             "perfis": perfis
         }
     )
+
 
 @router.post("/editar/{id}")
 @requer_autenticacao([Perfil.ADMIN.value])
@@ -264,6 +271,7 @@ async def post_editar(
             dados_formulario=dados_formulario,
             campo_padrao="email",
         )
+
 
 @router.post("/excluir/{id}")
 @requer_autenticacao([Perfil.ADMIN.value])

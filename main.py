@@ -3,7 +3,7 @@
 # ------------------------------------------------------------
 
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware.sessions import SessionMiddleware
@@ -63,22 +63,22 @@ from routes.artigos_routes import router as artigos_router
 # ------------------------------------------------------------
 def create_app() -> FastAPI:
     """Cria e configura a instância principal da aplicação."""
-    app = FastAPI(title=APP_NAME, version=VERSION)
+    application = FastAPI(title=APP_NAME, version=VERSION)
 
     # ------------------------------------------------------------
     # Middlewares
     # ------------------------------------------------------------
-    app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
-    app.add_middleware(MiddlewareProtecaoCSRF)
+    application.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+    application.add_middleware(MiddlewareProtecaoCSRF)
     logger.info("✅ Middlewares registrados com sucesso")
 
     # ------------------------------------------------------------
     # Handlers de exceção
     # ------------------------------------------------------------
-    app.add_exception_handler(StarletteHTTPException, http_exception_handler)
-    app.add_exception_handler(RequestValidationError, validation_exception_handler)
-    app.add_exception_handler(ErroValidacaoFormulario, form_validation_exception_handler)
-    app.add_exception_handler(Exception, generic_exception_handler)
+    application.add_exception_handler(StarletteHTTPException, http_exception_handler)
+    application.add_exception_handler(RequestValidationError, validation_exception_handler)
+    application.add_exception_handler(ErroValidacaoFormulario, form_validation_exception_handler)
+    application.add_exception_handler(Exception, generic_exception_handler)
     logger.info("✅ Exception handlers configurados")
 
     # ------------------------------------------------------------
@@ -86,7 +86,7 @@ def create_app() -> FastAPI:
     # ------------------------------------------------------------
     static_path = Path("static")
     if static_path.exists():
-        app.mount("/static", StaticFiles(directory="static"), name="static")
+        application.mount("/static", StaticFiles(directory="static"), name="static")
         logger.info("📂 Arquivos estáticos montados em /static")
     else:
         logger.warning(
@@ -134,7 +134,7 @@ def create_app() -> FastAPI:
         artigos_router,
     ]
     for r in routers:
-        app.include_router(r)
+        application.include_router(r)
         logger.info(
             f"🔗 Router incluído: {r.prefix if hasattr(r, 'prefix') else 'sem prefixo'}"
         )
@@ -142,12 +142,12 @@ def create_app() -> FastAPI:
     # ------------------------------------------------------------
     # Health Check
     # ------------------------------------------------------------
-    @app.get("/health")
+    @application.get("/health")
     async def health_check():
         return {"status": "healthy"}
 
     logger.info(f"🚀 {APP_NAME} inicializado com sucesso (v{VERSION})")
-    return app
+    return application
 
 
 # ------------------------------------------------------------

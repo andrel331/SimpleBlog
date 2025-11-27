@@ -18,7 +18,10 @@ from pydantic import ValidationError
 
 # DTOs
 from dtos.chat_dto import CriarSalaDTO, EnviarMensagemDTO
-from dtos.usuario_logado_dto import UsuarioLogado
+from model.usuario_logado_model import UsuarioLogado
+
+# Models
+from model.usuario_logado_model import UsuarioLogado
 
 # Repositories
 from repo import chat_sala_repo, chat_participante_repo, chat_mensagem_repo, usuario_repo
@@ -79,7 +82,6 @@ async def stream_mensagens(request: Request, usuario_logado: Optional[UsuarioLog
     Endpoint SSE para receber mensagens em tempo real.
     Cada usuário mantém UMA conexão que recebe mensagens de TODAS as suas salas.
     """
-    assert usuario_logado is not None
     usuario_id = usuario_logado.id
 
     async def event_generator():
@@ -272,6 +274,7 @@ async def listar_mensagens(
     Lista mensagens de uma sala específica com paginação.
     """
     assert usuario_logado is not None
+
     # Rate limiting por IP
     ip = obter_identificador_cliente(request)
     if not chat_listagem_limiter.verificar(ip):
@@ -324,6 +327,7 @@ async def enviar_mensagem(
     Envia uma mensagem em uma sala.
     """
     assert usuario_logado is not None
+
     # Rate limiting por IP
     ip = obter_identificador_cliente(request)
     if not chat_mensagem_limiter.verificar(ip):
@@ -447,6 +451,7 @@ async def buscar_usuarios(
     Administradores só podem ser contactados via sistema de chamados.
     """
     assert usuario_logado is not None
+
     # Rate limiting por IP
     ip = obter_identificador_cliente(request)
     if not busca_usuarios_limiter.verificar(ip):

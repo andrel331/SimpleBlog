@@ -3,7 +3,7 @@ from fastapi.responses import RedirectResponse, Response
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from util.template_util import criar_templates
-from util.flash_messages import informar_erro, informar_aviso
+from util.flash_messages import informar_erro
 from util.logger_config import logger
 from util.config import IS_DEVELOPMENT
 from util.validation_util import processar_erros_validacao
@@ -214,17 +214,6 @@ async def form_validation_exception_handler(request: Request, exc: ErroValidacao
 
     Returns:
         TemplateResponse renderizando o formulário com erros
-
-    Example:
-        Em uma rota, ao invés de:
-        >>> except ValidationError as e:
-        ...     erros = processar_erros_validacao(e, "senha")
-        ...     informar_erro(request, "Há campos com erros")
-        ...     return templates.TemplateResponse(...)
-
-        Simplesmente faça:
-        >>> except ValidationError as e:
-        ...     raise ErroValidacaoFormulario(e, "auth/login.html", dados, "senha")
     """
     # Type narrowing: garantir que é uma ErroValidacaoFormulario
     if not isinstance(exc, ErroValidacaoFormulario):

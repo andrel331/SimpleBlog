@@ -5,7 +5,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import ValidationError
 
 from dtos.artigo_dto import CriarArtigoDTO, AlterarArtigoDTO
-from dtos.usuario_logado_dto import UsuarioLogado
+from model.usuario_logado_model import UsuarioLogado
 from model.artigo_model import Artigo, StatusArtigo
 from repo import artigo_repo, categoria_repo
 from util.auth_decorator import requer_autenticacao

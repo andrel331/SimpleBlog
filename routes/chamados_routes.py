@@ -23,11 +23,12 @@ from pydantic import ValidationError
 # DTOs
 from dtos.chamado_dto import CriarChamadoDTO
 from dtos.chamado_interacao_dto import CriarInteracaoDTO
-from dtos.usuario_logado_dto import UsuarioLogado
+from model.usuario_logado_model import UsuarioLogado
 
 # Models
 from model.chamado_model import Chamado, StatusChamado, PrioridadeChamado
 from model.chamado_interacao_model import ChamadoInteracao, TipoInteracao
+from model.usuario_logado_model import UsuarioLogado
 
 # Repositories
 from repo import chamado_repo, chamado_interacao_repo
@@ -261,8 +262,8 @@ async def post_responder(
     interacoes = chamado_interacao_repo.obter_por_chamado(id)
     dados_formulario: dict = {
         "mensagem": mensagem,
-        "chamado": chamado,  # type: ignore[dict-item]
-        "interacoes": interacoes  # type: ignore[dict-item]
+        "chamado": chamado,
+        "interacoes": interacoes
     }
 
     try:

@@ -1,6 +1,3 @@
-"""
-DTOs para validação de dados do sistema de chat.
-"""
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
@@ -35,7 +32,9 @@ class ConversaResumoDTO(BaseModel):
     """DTO para resumo de uma conversa na lista."""
     sala_id: str = Field(..., description="Identificador único da sala de chat")
     outro_usuario: dict = Field(..., description="Dados do outro participante {id, nome, email, foto_url}")
-    ultima_mensagem: Optional[dict] = Field(default=None, description="Última mensagem da conversa {mensagem, data_envio, usuario_id}")
+    ultima_mensagem: Optional[dict] = Field(
+        default=None, description="Última mensagem da conversa {mensagem, data_envio, usuario_id}"
+    )
     nao_lidas: int = Field(default=0, description="Quantidade de mensagens não lidas")
     ultima_atividade: datetime = Field(..., description="Data/hora da última atividade na conversa")
 
