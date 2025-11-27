@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Request, Form, status
@@ -149,11 +150,7 @@ async def post_cadastrar(
                 "status_artigo": status_artigo,
                 "categoria_id": categoria_id,
             },
-            campo_padrao="titulo",
-            contexto_extra={
-                "categorias": categorias,
-                "status_artigo": StatusArtigo,
-            }
+            campo_padrao="titulo"
         )
 
 
@@ -290,12 +287,7 @@ async def post_editar(
                 "categoria_id": categoria_id,
                 "id": id,
             },
-            campo_padrao="titulo",
-            contexto_extra={
-                "artigo": artigo_atual,
-                "categorias": categorias,
-                "status_artigo": StatusArtigo,
-            }
+            campo_padrao="titulo"
         )
 
 
@@ -408,7 +400,7 @@ async def listar_artigos(
 
     # Ordenação
     if ordem == "antigos":
-        artigos = sorted(artigos, key=lambda a: a.data_publicacao or a.data_cadastro)
+        artigos = sorted(artigos, key=lambda a: a.data_publicacao or a.data_cadastro or datetime.min)
     elif ordem == "visualizacoes":
         artigos = sorted(artigos, key=lambda a: a.qtde_visualizacoes or 0, reverse=True)
     # Default é "recentes" (já vem ordenado do banco)
