@@ -271,31 +271,6 @@ def admin_autenticado(client, criar_usuario, fazer_login, admin_teste):
 
 
 @pytest.fixture
-def tarefa_teste():
-    """Dados de uma tarefa de teste"""
-    return {"titulo": "Tarefa de Teste", "descricao": "Descrição da tarefa de teste"}
-
-
-@pytest.fixture
-def criar_tarefa(cliente_autenticado):
-    """
-    Fixture que retorna uma função para criar tarefas
-    Requer autor autenticado
-    """
-
-    def _criar_tarefa(titulo: str, descricao: str = ""):
-        """Cria uma tarefa via endpoint"""
-        response = cliente_autenticado.post(
-            "/tarefas/cadastrar",
-            data={"titulo": titulo, "descricao": descricao},
-            follow_redirects=False,
-        )
-        return response
-
-    return _criar_tarefa
-
-
-@pytest.fixture
 def leitor_teste():
     """Dados de um leitor de teste"""
     return {

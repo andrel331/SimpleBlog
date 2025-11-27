@@ -328,19 +328,6 @@ class TestValidacaoInputs:
         # Pode ser rejeitado por validação ou sanitizado
         assert response.status_code in [200, 303]
 
-    def test_titulo_tarefa_vazio_rejeitado(self, cliente_autenticado):
-        """Título vazio ou só espaços deve ser rejeitado"""
-        response = cliente_autenticado.post(
-            "/tarefas/cadastrar",
-            data={"titulo": "   ", "descricao": "Descrição válida"},  # Só espaços
-            follow_redirects=True,
-        )
-
-        assert response.status_code == 200
-        assert (
-            "título" in response.text.lower() or "obrigatório" in response.text.lower()
-        )
-
     def test_perfil_invalido_rejeitado_no_cadastro_admin(self, admin_autenticado):
         """Perfil inválido no cadastro admin deve ser rejeitado"""
         response = admin_autenticado.post(

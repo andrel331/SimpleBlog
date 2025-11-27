@@ -4,6 +4,7 @@ from util.template_util import criar_templates
 from util.rate_limiter import DynamicRateLimiter, obter_identificador_cliente
 from util.flash_messages import informar_erro
 from util.logger_config import logger
+from util.auth_decorator import obter_usuario_logado
 from repo import artigo_repo, categoria_repo
 
 router = APIRouter()
