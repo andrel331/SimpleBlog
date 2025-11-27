@@ -19,6 +19,7 @@
     <link rel="stylesheet" href="/static/css/widget-chat.css">
     {% endif %}
 
+    {# Bloco que pode ser sobrescrito nas páginas filhas #}
     {% block head %}{% endblock %}
 </head>
 
@@ -47,8 +48,8 @@
                             href="/artigos"><i class="bi bi-newspaper"></i> Artigos</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.path == '/sobre' else '' }}"
-                            href="/sobre"><i class="bi bi-info-circle"></i> Sobre</a>
+                        <a class="nav-link {{ 'active' if request.path == '/sobre' else '' }}" href="/sobre"><i
+                                class="bi bi-info-circle"></i> Sobre</a>
                     </li>
                 </ul>
 
@@ -59,8 +60,7 @@
                     {% else %}
                     <!-- Botões de Login e Cadastro -->
                     <li class="nav-item">
-                        <a class="nav-link {{ 'active' if request.path == '/login' else '' }}"
-                            href="/login">Login</a>
+                        <a class="nav-link {{ 'active' if request.path == '/login' else '' }}" href="/login">Login</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {{ 'active' if request.path == '/cadastrar' else '' }}"

@@ -14,6 +14,7 @@ from pydantic import ValidationError
 
 # DTOs
 from dtos.configuracao_dto import EditarConfiguracaoDTO, SalvarConfiguracaoLoteDTO
+from dtos.usuario_logado_dto import UsuarioLogado
 
 # Repositories
 from repo import configuracao_repo
@@ -54,8 +55,9 @@ admin_config_limiter = DynamicRateLimiter(
 
 @router.get("/configuracoes")
 @requer_autenticacao([Perfil.ADMIN.value])
-async def get_listar_configuracoes(request: Request, usuario_logado: Optional[dict] = None):
+async def get_listar_configuracoes(request: Request, usuario_logado: Optional[UsuarioLogado] = None):
     """Lista todas as configurações agrupadas por categoria"""
+    assert usuario_logado is not None
     try:
         # Obter configurações agrupadas por categoria
         configs_por_categoria = configuracao_repo.obter_por_categoria()
@@ -92,7 +94,7 @@ async def get_listar_configuracoes(request: Request, usuario_logado: Optional[di
 @requer_autenticacao([Perfil.ADMIN.value])
 async def post_salvar_lote_configuracoes(
     request: Request,
-    usuario_logado: Optional[dict] = None
+    usuario_logado: Optional[UsuarioLogado] = None
 ):
     """
     Salva múltiplas configurações de uma vez (salvamento em lote).
@@ -136,7 +138,7 @@ async def post_salvar_lote_configuracoes(
 
         # Log de auditoria
         logger.info(
-            f"Atualização em lote de configurações por admin {usuario_logado['id']} - "
+            f"Atualização em lote de configurações por admin {usuario_logado.id} - "
             f"{quantidade_atualizada} atualizadas, {len(chaves_nao_encontradas)} não encontradas"
         )
 
@@ -191,8 +193,9 @@ async def post_salvar_lote_configuracoes(
 
 @router.get("/tema")
 @requer_autenticacao([Perfil.ADMIN.value])
-async def get_tema(request: Request, usuario_logado: Optional[dict] = None):
+async def get_tema(request: Request, usuario_logado: Optional[UsuarioLogado] = None):
     """Exibe seletor de temas visuais da aplicação"""
+    assert usuario_logado is not None
     # Obter tema atual do banco de dados
     config_tema = configuracao_repo.obter_por_chave("theme")
     tema_atual = config_tema.valor if config_tema else "original"
@@ -228,7 +231,7 @@ async def get_tema(request: Request, usuario_logado: Optional[dict] = None):
 async def post_aplicar_tema(
     request: Request,
     tema: str = Form(...),
-    usuario_logado: Optional[dict] = None
+    usuario_logado: Optional[UsuarioLogado] = None
 ):
     """
     Aplica um tema visual selecionado
@@ -272,7 +275,7 @@ async def post_aplicar_tema(
             config.limpar()
 
             logger.info(
-                f"Tema alterado para '{tema}' por admin {usuario_logado['id']}"
+                f"Tema alterado para '{tema}' por admin {usuario_logado.id}"
             )
             informar_sucesso(
                 request,
@@ -340,8 +343,9 @@ def _ler_log_arquivo(data: str, nivel: str) -> tuple[str, int, Optional[str]]:
 
 @router.get("/auditoria")
 @requer_autenticacao([Perfil.ADMIN.value])
-async def get_auditoria(request: Request, usuario_logado: Optional[dict] = None):
+async def get_auditoria(request: Request, usuario_logado: Optional[UsuarioLogado] = None):
     """Exibe página de auditoria de logs do sistema"""
+    assert usuario_logado is not None
     # Data padrão: hoje
     data_hoje = agora().strftime('%Y-%m-%d')
 
@@ -361,7 +365,7 @@ async def post_filtrar_auditoria(
     request: Request,
     data: str = Form(...),
     nivel: str = Form(...),
-    usuario_logado: Optional[dict] = None
+    usuario_logado: Optional[UsuarioLogado] = None
 ):
     """
     Filtra logs do sistema por data e nível
@@ -383,7 +387,7 @@ async def post_filtrar_auditoria(
 
     # Log da ação de auditoria
     logger.info(
-        f"Auditoria de logs realizada por admin {usuario_logado['id']} - "
+        f"Auditoria de logs realizada por admin {usuario_logado.id} - "
         f"Data: {data}, Nível: {nivel}, Linhas encontradas: {total_linhas}"
     )
 

@@ -20,7 +20,7 @@ Exemplo de uso:
         # Verificar se usuário é dono da tarefa
         if not verificar_propriedade(
             tarefa,
-            usuario_logado["id"],
+            usuario_logado.id,
             request,
             "Você não tem permissão para excluir esta tarefa",
             "/tarefas/listar"
@@ -38,6 +38,7 @@ from typing import Optional, List, Union, Any
 from fastapi import Request, status
 from fastapi.responses import RedirectResponse
 
+from dtos.usuario_logado_dto import UsuarioLogado
 from util.flash_messages import informar_erro
 from util.logger_config import logger
 from util.perfis import Perfil
@@ -74,7 +75,7 @@ def verificar_propriedade(
         >>> tarefa = tarefa_repo.obter_por_id(id)
         >>> if not verificar_propriedade(
         ...     tarefa,
-        ...     usuario_logado["id"],
+        ...     usuario_logado.id,
         ...     request,
         ...     "Você não pode editar esta tarefa",
         ...     "/tarefas/listar"
@@ -138,7 +139,7 @@ def verificar_propriedade(
 
 def verificar_propriedade_ou_admin(
     entity: Any,
-    usuario_logado: dict,
+    usuario_logado: UsuarioLogado,
     request: Request,
     mensagem_erro: str = "Você não tem permissão para acessar este recurso",
     redirect_url: str = "/",
@@ -152,7 +153,7 @@ def verificar_propriedade_ou_admin(
 
     Args:
         entity: Entidade a verificar
-        usuario_logado: Dict com dados do usuário logado (id, perfil, etc)
+        usuario_logado: Objeto UsuarioLogado com dados do usuário logado
         request: Objeto Request do FastAPI
         mensagem_erro: Mensagem de erro a exibir
         redirect_url: URL para redirecionar se acesso negado
@@ -175,13 +176,13 @@ def verificar_propriedade_ou_admin(
         >>> # Usuário é dono OU admin, pode continuar
     """
     # Se é admin, permitir acesso
-    if usuario_logado.get("perfil") == Perfil.ADMIN.value:
+    if usuario_logado.perfil == Perfil.ADMIN.value:
         return True
 
     # Se não é admin, verificar propriedade normal
     return verificar_propriedade(
         entity,
-        usuario_logado["id"],
+        usuario_logado.id,
         request,
         mensagem_erro,
         redirect_url,
@@ -215,7 +216,7 @@ def verificar_perfil(
     Example:
         >>> # Permitir apenas Admin e Vendedor
         >>> if not verificar_perfil(
-        ...     usuario_logado["perfil"],
+        ...     usuario_logado.perfil,
         ...     [Perfil.ADMIN.value, Perfil.VENDEDOR.value],
         ...     request,
         ...     "Apenas administradores e vendedores podem acessar",
@@ -267,7 +268,7 @@ def verificar_multiplas_condicoes(
     Example:
         >>> # Verificar se usuário é dono E status não é "Fechado"
         >>> if not verificar_multiplas_condicoes([
-        ...     (chamado.usuario_id == usuario_logado["id"], "Não é seu chamado"),
+        ...     (chamado.usuario_id == usuario_logado.id, "Não é seu chamado"),
         ...     (chamado.status != "Fechado", "Chamado já está fechado")
         ... ], request, redirect_url="/chamados/listar"):
         ...     return RedirectResponse("/chamados/listar", status_code=status.HTTP_303_SEE_OTHER)
@@ -275,8 +276,8 @@ def verificar_multiplas_condicoes(
     Example com OR:
         >>> # Verificar se usuário é dono OU é admin
         >>> if not verificar_multiplas_condicoes([
-        ...     (tarefa.usuario_id == usuario_logado["id"], "Não é sua tarefa"),
-        ...     (usuario_logado["perfil"] == Perfil.ADMIN.value, "Não é administrador")
+        ...     (tarefa.usuario_id == usuario_logado.id, "Não é sua tarefa"),
+        ...     (usuario_logado.perfil == Perfil.ADMIN.value, "Não é administrador")
         ... ], request, redirect_url="/tarefas/listar", operador="OR"):
         ...     return RedirectResponse("/tarefas/listar", status_code=status.HTTP_303_SEE_OTHER)
     """
@@ -326,7 +327,7 @@ async def post_excluir_chamado(request: Request, id: int, usuario_logado: dict):
     # Verificar propriedade (apenas dono pode excluir)
     if not verificar_propriedade(
         chamado,
-        usuario_logado["id"],
+        usuario_logado.id,
         request,
         "Você não pode excluir um chamado que não é seu",
         "/chamados/listar"

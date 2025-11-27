@@ -5,6 +5,7 @@ from fastapi.responses import RedirectResponse
 from pydantic import ValidationError
 
 from dtos.artigo_dto import CriarArtigoDTO, AlterarArtigoDTO
+from dtos.usuario_logado_dto import UsuarioLogado
 from model.artigo_model import Artigo, StatusArtigo
 from repo import artigo_repo, categoria_repo
 from util.auth_decorator import requer_autenticacao
@@ -30,10 +31,11 @@ artigos_limiter = RateLimiter(
 @requer_autenticacao([Perfil.AUTOR.value, Perfil.ADMIN.value])
 async def meus_artigos(
     request: Request,
-    usuario_logado: Optional[dict] = None,
+    usuario_logado: Optional[UsuarioLogado] = None,
 ):
     """Lista os artigos do autor logado."""
-    artigos = artigo_repo.obter_por_usuario(usuario_logado["id"])
+    assert usuario_logado is not None
+    artigos = artigo_repo.obter_por_usuario(usuario_logado.id)
 
     return templates.TemplateResponse(
         "artigos/listar.html",
@@ -50,9 +52,10 @@ async def meus_artigos(
 @requer_autenticacao([Perfil.AUTOR.value, Perfil.ADMIN.value])
 async def get_cadastrar(
     request: Request,
-    usuario_logado: Optional[dict] = None,
+    usuario_logado: Optional[UsuarioLogado] = None,
 ):
     """Exibe o formulário de cadastro de artigo."""
+    assert usuario_logado is not None
     categorias = categoria_repo.obter_todos()
 
     return templates.TemplateResponse(
@@ -70,7 +73,7 @@ async def get_cadastrar(
 @requer_autenticacao([Perfil.AUTOR.value, Perfil.ADMIN.value])
 async def post_cadastrar(
     request: Request,
-    usuario_logado: Optional[dict] = None,
+    usuario_logado: Optional[UsuarioLogado] = None,
     titulo: str = Form(""),
     resumo: str = Form(""),
     conteudo: str = Form(""),
@@ -78,6 +81,7 @@ async def post_cadastrar(
     categoria_id: int = Form(0),
 ):
     """Processa o cadastro de um novo artigo."""
+    assert usuario_logado is not None
     ip = obter_identificador_cliente(request)
     if not artigos_limiter.verificar(ip):
         informar_erro(
@@ -114,14 +118,14 @@ async def post_cadastrar(
             resumo=dto.resumo,
             conteudo=dto.conteudo,
             status=dto.status,
-            usuario_id=usuario_logado["id"],
+            usuario_id=usuario_logado.id,
             categoria_id=dto.categoria_id
         )
 
         artigo_id = artigo_repo.inserir(novo_artigo)
 
         if artigo_id:
-            logger.info(f"Artigo '{dto.titulo}' criado por usuário {usuario_logado['id']}")
+            logger.info(f"Artigo '{dto.titulo}' criado por usuário {usuario_logado.id}")
             informar_sucesso(request, "Artigo cadastrado com sucesso!")
             return RedirectResponse(
                 url="/artigos/meus",
@@ -158,9 +162,10 @@ async def post_cadastrar(
 async def get_editar(
     request: Request,
     id: int,
-    usuario_logado: Optional[dict] = None,
+    usuario_logado: Optional[UsuarioLogado] = None,
 ):
     """Exibe o formulário de edição de artigo."""
+    assert usuario_logado is not None
     artigo = artigo_repo.obter_por_id(id)
 
     if not artigo:
@@ -171,7 +176,7 @@ async def get_editar(
         )
 
     # Verifica se o usuário é o autor do artigo ou admin
-    if artigo.usuario_id != usuario_logado["id"] and usuario_logado["perfil"] != Perfil.ADMIN.value:
+    if artigo.usuario_id != usuario_logado.id and usuario_logado.perfil != Perfil.ADMIN.value:
         informar_erro(request, "Você não tem permissão para editar este artigo.")
         return RedirectResponse(
             url="/artigos/meus",
@@ -197,7 +202,7 @@ async def get_editar(
 async def post_editar(
     request: Request,
     id: int,
-    usuario_logado: Optional[dict] = None,
+    usuario_logado: Optional[UsuarioLogado] = None,
     titulo: str = Form(""),
     resumo: str = Form(""),
     conteudo: str = Form(""),
@@ -205,6 +210,7 @@ async def post_editar(
     categoria_id: int = Form(0),
 ):
     """Processa a edição de um artigo."""
+    assert usuario_logado is not None
     ip = obter_identificador_cliente(request)
     if not artigos_limiter.verificar(ip):
         informar_erro(
@@ -225,7 +231,7 @@ async def post_editar(
         )
 
     # Verifica permissão
-    if artigo_atual.usuario_id != usuario_logado["id"] and usuario_logado["perfil"] != Perfil.ADMIN.value:
+    if artigo_atual.usuario_id != usuario_logado.id and usuario_logado.perfil != Perfil.ADMIN.value:
         informar_erro(request, "Você não tem permissão para editar este artigo.")
         return RedirectResponse(
             url="/artigos/meus",
@@ -259,7 +265,7 @@ async def post_editar(
         artigo_atual.categoria_id = dto.categoria_id
 
         if artigo_repo.alterar(artigo_atual):
-            logger.info(f"Artigo {id} alterado por usuário {usuario_logado['id']}")
+            logger.info(f"Artigo {id} alterado por usuário {usuario_logado.id}")
             informar_sucesso(request, "Artigo alterado com sucesso!")
             return RedirectResponse(
                 url="/artigos/meus",
@@ -298,9 +304,10 @@ async def post_editar(
 async def post_excluir(
     request: Request,
     id: int,
-    usuario_logado: Optional[dict] = None,
+    usuario_logado: Optional[UsuarioLogado] = None,
 ):
     """Exclui um artigo."""
+    assert usuario_logado is not None
     ip = obter_identificador_cliente(request)
     if not artigos_limiter.verificar(ip):
         informar_erro(
@@ -321,7 +328,7 @@ async def post_excluir(
         )
 
     # Verifica permissão
-    if artigo.usuario_id != usuario_logado["id"] and usuario_logado["perfil"] != Perfil.ADMIN.value:
+    if artigo.usuario_id != usuario_logado.id and usuario_logado.perfil != Perfil.ADMIN.value:
         informar_erro(request, "Você não tem permissão para excluir este artigo.")
         return RedirectResponse(
             url="/artigos/meus",
@@ -329,7 +336,7 @@ async def post_excluir(
         )
 
     if artigo_repo.excluir(id):
-        logger.info(f"Artigo {id} excluído por usuário {usuario_logado['id']}")
+        logger.info(f"Artigo {id} excluído por usuário {usuario_logado.id}")
         informar_sucesso(request, f"Artigo '{artigo.titulo}' excluído com sucesso!")
     else:
         informar_erro(request, "Erro ao excluir artigo.")
@@ -345,9 +352,10 @@ async def post_excluir(
 async def post_publicar(
     request: Request,
     id: int,
-    usuario_logado: Optional[dict] = None,
+    usuario_logado: Optional[UsuarioLogado] = None,
 ):
     """Publica um artigo."""
+    assert usuario_logado is not None
     artigo = artigo_repo.obter_por_id(id)
     if not artigo:
         informar_erro(request, "Artigo não encontrado.")
@@ -357,7 +365,7 @@ async def post_publicar(
         )
 
     # Verifica permissão
-    if artigo.usuario_id != usuario_logado["id"] and usuario_logado["perfil"] != Perfil.ADMIN.value:
+    if artigo.usuario_id != usuario_logado.id and usuario_logado.perfil != Perfil.ADMIN.value:
         informar_erro(request, "Você não tem permissão para publicar este artigo.")
         return RedirectResponse(
             url="/artigos/meus",
@@ -365,7 +373,7 @@ async def post_publicar(
         )
 
     if artigo_repo.alterar_status(id, StatusArtigo.PUBLICADO.value):
-        logger.info(f"Artigo {id} publicado por usuário {usuario_logado['id']}")
+        logger.info(f"Artigo {id} publicado por usuário {usuario_logado.id}")
         informar_sucesso(request, "Artigo publicado com sucesso!")
     else:
         informar_erro(request, "Erro ao publicar artigo.")
@@ -426,9 +434,10 @@ async def listar_artigos(
 async def ler_artigo(
     request: Request,
     id: int,
-    usuario_logado: Optional[dict] = None,
+    usuario_logado: Optional[UsuarioLogado] = None,
 ):
     """Exibe um artigo completo (somente para usuários autenticados)."""
+    assert usuario_logado is not None
     artigo = artigo_repo.obter_por_id(id)
 
     if not artigo:
@@ -440,7 +449,7 @@ async def ler_artigo(
 
     # Verifica se o artigo está publicado ou se o usuário é o autor/admin
     if artigo.status != StatusArtigo.PUBLICADO.value:
-        if artigo.usuario_id != usuario_logado["id"] and usuario_logado["perfil"] != Perfil.ADMIN.value:
+        if artigo.usuario_id != usuario_logado.id and usuario_logado.perfil != Perfil.ADMIN.value:
             informar_erro(request, "Este artigo não está disponível.")
             return RedirectResponse(
                 url="/artigos",

@@ -4,18 +4,25 @@ from functools import wraps
 from typing import List, Optional
 from util.logger_config import logger
 from util.flash_messages import informar_erro
+from dtos.usuario_logado_dto import UsuarioLogado
+
 
 def criar_sessao(request: Request, usuario: dict):
     """Cria sessão de usuário"""
     request.session["usuario_logado"] = usuario
 
+
 def destruir_sessao(request: Request):
     """Destroi sessão de usuário"""
     request.session.clear()
 
-def obter_usuario_logado(request: Request) -> Optional[dict]:
+
+def obter_usuario_logado(request: Request) -> Optional[UsuarioLogado]:
     """Obtém usuário logado da sessão"""
-    return request.session.get("usuario_logado")
+    dados = request.session.get("usuario_logado")
+    if dados:
+        return UsuarioLogado(**dados)
+    return None
 
 def esta_logado(request: Request) -> bool:
     """Verifica se usuário está logado"""
@@ -49,11 +56,10 @@ def requer_autenticacao(perfis_permitidos: Optional[List[str]] = None):
 
             # Verificar perfil se especificado
             if perfis_permitidos:
-                perfil_usuario = usuario.get("perfil")
-                if perfil_usuario not in perfis_permitidos:
+                if usuario.perfil not in perfis_permitidos:
                     logger.warning(
-                        f"Usuário {usuario.get('email')} tentou acessar {request.url.path} "
-                        f"sem permissão (perfil: {perfil_usuario})"
+                        f"Usuário {usuario.email} tentou acessar {request.url.path} "
+                        f"sem permissão (perfil: {usuario.perfil})"
                     )
                     informar_erro(request, "Você não tem permissão para acessar esta página.")
                     return RedirectResponse("/login", status_code=status.HTTP_303_SEE_OTHER)

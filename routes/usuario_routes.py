@@ -12,6 +12,7 @@ from pydantic import ValidationError
 
 # DTOs
 from dtos.perfil_dto import EditarPerfilDTO, AlterarSenhaDTO
+from dtos.usuario_logado_dto import UsuarioLogado
 
 # Repositories
 from repo import usuario_repo, chamado_repo
@@ -65,7 +66,7 @@ form_get_limiter = DynamicRateLimiter(
 
 @router.get("/usuario")
 @requer_autenticacao()
-async def dashboard(request: Request, usuario_logado: Optional[dict] = None):
+async def dashboard(request: Request, usuario_logado: Optional[UsuarioLogado] = None):
     """
     Dashboard do usuário (área privada)
     Requer autenticação
@@ -79,25 +80,25 @@ async def dashboard(request: Request, usuario_logado: Optional[dict] = None):
     }
 
     # Adicionar contador de chamados conforme perfil
-    if usuario_logado["perfil"] == Perfil.ADMIN.value:
+    if usuario_logado.perfil == Perfil.ADMIN.value:
         # Admin vê total de chamados pendentes no sistema
         context["chamados_pendentes"] = chamado_repo.contar_pendentes()
     else:
         # Usuário comum vê seus próprios chamados em aberto
-        context["chamados_abertos"] = chamado_repo.contar_abertos_por_usuario(usuario_logado["id"])
+        context["chamados_abertos"] = chamado_repo.contar_abertos_por_usuario(usuario_logado.id)
 
     return templates_usuario.TemplateResponse("dashboard.html", context)
 
 
 @router.get("/usuario/perfil/visualizar")
 @requer_autenticacao()
-async def get_visualizar_perfil(request: Request, usuario_logado: Optional[dict] = None):
+async def get_visualizar_perfil(request: Request, usuario_logado: Optional[UsuarioLogado] = None):
     """Visualizar perfil do usuário logado"""
     assert usuario_logado is not None
 
     # Obter usuário ou redirecionar para logout
     usuario = obter_ou_404(
-        usuario_repo.obter_por_id(usuario_logado["id"]),
+        usuario_repo.obter_por_id(usuario_logado.id),
         request,
         "Usuário não encontrado!",
         "/logout"
@@ -112,7 +113,7 @@ async def get_visualizar_perfil(request: Request, usuario_logado: Optional[dict]
 
 @router.get("/usuario/perfil/editar")
 @requer_autenticacao()
-async def get_editar_perfil(request: Request, usuario_logado: Optional[dict] = None):
+async def get_editar_perfil(request: Request, usuario_logado: Optional[UsuarioLogado] = None):
     # Rate limiting por IP
     ip = obter_identificador_cliente(request)
     if not form_get_limiter.verificar(ip):
@@ -124,7 +125,7 @@ async def get_editar_perfil(request: Request, usuario_logado: Optional[dict] = N
 
     # Obter usuário ou redirecionar para logout
     usuario = obter_ou_404(
-        usuario_repo.obter_por_id(usuario_logado["id"]),
+        usuario_repo.obter_por_id(usuario_logado.id),
         request,
         "Usuário não encontrado!",
         "/logout"
@@ -143,14 +144,14 @@ async def post_editar_perfil(
     request: Request,
     nome: str = Form(),
     email: str = Form(),
-    usuario_logado: Optional[dict] = None,
+    usuario_logado: Optional[UsuarioLogado] = None,
 ):
     """Processar edição de dados do perfil"""
     assert usuario_logado is not None
 
     # Obter usuário ou redirecionar para logout
     usuario = obter_ou_404(
-        usuario_repo.obter_por_id(usuario_logado["id"]),
+        usuario_repo.obter_por_id(usuario_logado.id),
         request,
         "Usuário não encontrado!",
         "/logout"
@@ -165,7 +166,7 @@ async def post_editar_perfil(
         dto = EditarPerfilDTO(nome=nome, email=email)
 
         # Verificar se o e-mail já está em uso por outro usuário
-        disponivel, mensagem_erro = verificar_email_disponivel(dto.email, usuario_logado["id"])
+        disponivel, mensagem_erro = verificar_email_disponivel(dto.email, usuario_logado.id)
         if not disponivel:
             informar_erro(request, mensagem_erro)
             return templates_usuario.TemplateResponse(
@@ -223,7 +224,7 @@ async def post_editar_perfil(
 
 @router.get("/usuario/perfil/alterar-senha")
 @requer_autenticacao()
-async def get_alterar_senha(request: Request, usuario_logado: Optional[dict] = None):
+async def get_alterar_senha(request: Request, usuario_logado: Optional[UsuarioLogado] = None):
     """Formulário para alterar senha"""
     # Rate limiting por IP
     ip = obter_identificador_cliente(request)
@@ -243,7 +244,7 @@ async def post_alterar_senha(
     senha_atual: str = Form(),
     senha_nova: str = Form(),
     confirmar_senha: str = Form(),
-    usuario_logado: Optional[dict] = None,
+    usuario_logado: Optional[UsuarioLogado] = None,
 ):
     """Processar alteração de senha"""
     assert usuario_logado is not None
@@ -276,7 +277,7 @@ async def post_alterar_senha(
 
         # Obter usuário ou redirecionar para logout
         usuario = obter_ou_404(
-            usuario_repo.obter_por_id(usuario_logado["id"]),
+            usuario_repo.obter_por_id(usuario_logado.id),
             request,
             "Usuário não encontrado!",
             "/logout"
@@ -348,7 +349,7 @@ async def post_alterar_senha(
 async def post_atualizar_foto(
     request: Request,
     foto_base64: str = Form(),
-    usuario_logado: Optional[dict] = None,
+    usuario_logado: Optional[UsuarioLogado] = None,
 ):
     """Upload de foto de perfil cropada"""
     assert usuario_logado is not None
@@ -366,7 +367,7 @@ async def post_atualizar_foto(
         )
 
     try:
-        usuario_id = usuario_logado["id"]
+        usuario_id = usuario_logado.id
 
         # Validação básica
         if not foto_base64 or len(foto_base64) < 100:

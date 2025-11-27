@@ -301,7 +301,7 @@ async def get_editar(request: Request, id: int, usuario_logado: dict):
         return tarefa
 
     # Verificar propriedade
-    if tarefa.usuario_id != usuario_logado["id"]:
+    if tarefa.usuario_id != usuario_logado.id:
         informar_erro(request, "Você não tem permissão para editar esta tarefa")
         return RedirectResponse("/tarefas/listar", status_code=status.HTTP_303_SEE_OTHER)
 
