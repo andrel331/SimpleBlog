@@ -1,28 +1,52 @@
+# =============================================================================
+# Imports
+# =============================================================================
+
+# Standard library
 from typing import Optional
+
+# Third-party
 from fastapi import APIRouter, Form, Request, status
 from fastapi.responses import RedirectResponse
 from pydantic import ValidationError
 
+# DTOs
 from dtos.usuario_dto import CriarUsuarioDTO, AlterarUsuarioDTO
+
+# Models
 from model.usuario_model import Usuario
+
+# Repositories
 from repo import usuario_repo
+
+# Utilities
 from util.auth_decorator import requer_autenticacao
-from util.template_util import criar_templates
+from util.exceptions import ErroValidacaoFormulario
 from util.flash_messages import informar_sucesso, informar_erro
 from util.logger_config import logger
 from util.perfis import Perfil
+from util.rate_limiter import DynamicRateLimiter, obter_identificador_cliente
+from util.repository_helpers import obter_ou_404
 from util.security import criar_hash_senha
-from util.exceptions import FormValidationError
+from util.template_util import criar_templates
 from util.validation_helpers import verificar_email_disponivel
-from util.rate_limiter import RateLimiter, obter_identificador_cliente
+
+# =============================================================================
+# Configuração do Router
+# =============================================================================
 
 router = APIRouter(prefix="/admin/usuarios")
 templates = criar_templates("templates/admin/usuarios")
 
-# Rate limiter para operações admin (mais restritivo)
-admin_usuarios_limiter = RateLimiter(
-    max_tentativas=10,  # 10 operações
-    janela_minutos=1,   # por minuto
+# =============================================================================
+# Rate Limiters
+# =============================================================================
+
+admin_usuarios_limiter = DynamicRateLimiter(
+    chave_max="rate_limit_admin_usuarios_max",
+    chave_minutos="rate_limit_admin_usuarios_minutos",
+    padrao_max=10,
+    padrao_minutos=1,
     nome="admin_usuarios",
 )
 
@@ -118,7 +142,7 @@ async def post_cadastrar(
     except ValidationError as e:
         # Adicionar perfis aos dados para renderizar o select no template
         dados_formulario["perfis"] = Perfil.valores()
-        raise FormValidationError(
+        raise ErroValidacaoFormulario(
             validation_error=e,
             template_path="admin/usuarios/cadastro.html",
             dados_formulario=dados_formulario,
@@ -129,11 +153,15 @@ async def post_cadastrar(
 @requer_autenticacao([Perfil.ADMIN.value])
 async def get_editar(request: Request, id: int, usuario_logado: Optional[dict] = None):
     """Exibe formulário de alteração de usuário"""
-    usuario = usuario_repo.obter_por_id(id)
-
-    if not usuario:
-        informar_erro(request, "Usuário não encontrado")
-        return RedirectResponse("/admin/usuarios/listar", status_code=status.HTTP_303_SEE_OTHER)
+    # Obter usuário ou retornar 404
+    usuario = obter_ou_404(
+        usuario_repo.obter_por_id(id),
+        request,
+        "Usuário não encontrado",
+        "/admin/usuarios/listar"
+    )
+    if isinstance(usuario, RedirectResponse):
+        return usuario
 
     # Criar cópia dos dados do usuário sem o campo senha (para não expor hash no HTML)
     dados_usuario = usuario.__dict__.copy()
@@ -169,11 +197,15 @@ async def post_editar(
         informar_erro(request, "Muitas operações. Aguarde um momento e tente novamente.")
         return RedirectResponse("/admin/usuarios/listar", status_code=status.HTTP_303_SEE_OTHER)
 
-    # Verificar se usuário existe
-    usuario_atual = usuario_repo.obter_por_id(id)
-    if not usuario_atual:
-        informar_erro(request, "Usuário não encontrado")
-        return RedirectResponse("/admin/usuarios/listar", status_code=status.HTTP_303_SEE_OTHER)
+    # Obter usuário ou retornar 404
+    usuario_atual = obter_ou_404(
+        usuario_repo.obter_por_id(id),
+        request,
+        "Usuário não encontrado",
+        "/admin/usuarios/listar"
+    )
+    if isinstance(usuario_atual, RedirectResponse):
+        return usuario_atual
 
     # Armazena os dados do formulário para reexibição em caso de erro
     dados_formulario: dict = {"id": id, "nome": nome, "email": email, "perfil": perfil}
@@ -221,7 +253,7 @@ async def post_editar(
         # Adicionar perfis e usuario aos dados para renderizar o template
         dados_formulario["perfis"] = Perfil.valores()
         dados_formulario["usuario"] = usuario_repo.obter_por_id(id)
-        raise FormValidationError(
+        raise ErroValidacaoFormulario(
             validation_error=e,
             template_path="admin/usuarios/editar.html",
             dados_formulario=dados_formulario,
@@ -240,11 +272,15 @@ async def post_excluir(request: Request, id: int, usuario_logado: Optional[dict]
         informar_erro(request, "Muitas operações. Aguarde um momento e tente novamente.")
         return RedirectResponse("/admin/usuarios/listar", status_code=status.HTTP_303_SEE_OTHER)
 
-    usuario = usuario_repo.obter_por_id(id)
-
-    if not usuario:
-        informar_erro(request, "Usuário não encontrado")
-        return RedirectResponse("/admin/usuarios/listar", status_code=status.HTTP_303_SEE_OTHER)
+    # Obter usuário ou retornar 404
+    usuario = obter_ou_404(
+        usuario_repo.obter_por_id(id),
+        request,
+        "Usuário não encontrado",
+        "/admin/usuarios/listar"
+    )
+    if isinstance(usuario, RedirectResponse):
+        return usuario
 
     # Impedir exclusão do próprio usuário
     if usuario.id == usuario_logado["id"]:

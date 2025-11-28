@@ -15,14 +15,14 @@ from pathlib import Path
 # ------------------------------------------------------------
 from util.config import APP_NAME, SECRET_KEY, HOST, PORT, RELOAD, VERSION
 from util.logger_config import logger
-from util.csrf_protection import CSRFProtectionMiddleware
+from util.csrf_protection import MiddlewareProtecaoCSRF
 from util.exception_handlers import (
     http_exception_handler,
     validation_exception_handler,
     generic_exception_handler,
     form_validation_exception_handler,
 )
-from util.exceptions import FormValidationError
+from util.exceptions import ErroValidacaoFormulario
 from util.seed_data import inicializar_dados
 
 # ------------------------------------------------------------
@@ -39,7 +39,6 @@ from repo import (
     chat_sala_repo,
     chat_participante_repo,
     chat_mensagem_repo,
-    categoria_repo,
 )
 
 # ------------------------------------------------------------
@@ -70,7 +69,7 @@ def create_app() -> FastAPI:
     # Middlewares
     # ------------------------------------------------------------
     app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
-    app.add_middleware(CSRFProtectionMiddleware)
+    app.add_middleware(MiddlewareProtecaoCSRF)
     logger.info("✅ Middlewares registrados com sucesso")
 
     # ------------------------------------------------------------
@@ -78,7 +77,7 @@ def create_app() -> FastAPI:
     # ------------------------------------------------------------
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
-    app.add_exception_handler(FormValidationError, form_validation_exception_handler)
+    app.add_exception_handler(ErroValidacaoFormulario, form_validation_exception_handler)
     app.add_exception_handler(Exception, generic_exception_handler)
     logger.info("✅ Exception handlers configurados")
 

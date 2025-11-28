@@ -15,8 +15,8 @@
     <!-- CSS Customizado -->
     <link rel="stylesheet" href="/static/css/custom.css">
 
-    <!-- Chat Widget CSS -->
-    <link rel="stylesheet" href="/static/css/chat-widget.css">
+    <!-- Widget de Chat CSS -->
+    <link rel="stylesheet" href="/static/css/widget-chat.css">
 
     {# Bloco que pode ser sobrescrito nas páginas filhas #}
     {% block head %}{% endblock %}
@@ -131,6 +131,12 @@
         {{ obter_mensagens(request) | tojson }}
     </script>
 
+    <!-- Configurações globais da aplicação -->
+    <script>
+        // Delay configurável para auto-hide dos toasts
+        window.TOAST_AUTO_HIDE_DELAY_MS = {{ TOAST_AUTO_HIDE_DELAY_MS }};
+    </script>
+
     <!-- Bootstrap 5.3.8 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -140,9 +146,9 @@
     <!-- Scripts personalizados -->
     <script src="/static/js/toasts.js"></script>
     <script src="/static/js/modal-alerta.js"></script>
-    <script src="/static/js/password-validator.js"></script>
-    <script src="/static/js/input-mask.js"></script>
-    <script src="/static/js/chat-widget.js" defer></script>
+    <script src="/static/js/validador-senha.js"></script>
+    <script src="/static/js/mascara-input.js"></script>
+    <script src="/static/js/widget-chat.js" defer></script>
 
     <!-- Script de inicialização -->
     <script>

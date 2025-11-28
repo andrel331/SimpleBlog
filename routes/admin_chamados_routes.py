@@ -8,26 +8,58 @@ Permite que administradores:
 - Fechem chamados
 """
 
+# =============================================================================
+# Imports
+# =============================================================================
+
+# Standard library
 from typing import Optional
+
+# Third-party
 from fastapi import APIRouter, Form, Request, status
 from fastapi.responses import RedirectResponse
 from pydantic import ValidationError
 
+# DTOs
 from dtos.chamado_dto import AlterarStatusDTO
 from dtos.chamado_interacao_dto import CriarInteracaoDTO
+
+# Models
 from model.chamado_model import StatusChamado
 from model.chamado_interacao_model import ChamadoInteracao, TipoInteracao
-from util.datetime_util import agora
+
+# Repositories
 from repo import chamado_repo, chamado_interacao_repo
+
+# Utilities
 from util.auth_decorator import requer_autenticacao
-from util.perfis import Perfil
-from util.template_util import criar_templates
+from util.datetime_util import agora
+from util.exceptions import ErroValidacaoFormulario
 from util.flash_messages import informar_sucesso, informar_erro
 from util.logger_config import logger
-from util.exceptions import FormValidationError
+from util.perfis import Perfil
+from util.rate_limiter import DynamicRateLimiter, obter_identificador_cliente
+from util.repository_helpers import obter_ou_404
+from util.template_util import criar_templates
+
+# =============================================================================
+# Configuração do Router
+# =============================================================================
 
 router = APIRouter(prefix="/admin/chamados")
 templates = criar_templates("templates/admin/chamados")
+
+# =============================================================================
+# Rate Limiters
+# =============================================================================
+
+admin_chamado_responder_limiter = DynamicRateLimiter(
+    chave_max="rate_limit_admin_chamado_responder_max",
+    chave_minutos="rate_limit_admin_chamado_responder_minutos",
+    padrao_max=20,
+    padrao_minutos=5,
+    nome="admin_chamado_responder",
+)
 
 
 @router.get("/listar")
@@ -48,11 +80,16 @@ async def listar(request: Request, usuario_logado: Optional[dict] = None):
 async def get_responder(request: Request, id: int, usuario_logado: Optional[dict] = None):
     """Exibe formulário para responder um chamado com histórico completo."""
     assert usuario_logado is not None
-    chamado = chamado_repo.obter_por_id(id)
 
-    if not chamado:
-        informar_erro(request, "Chamado não encontrado")
-        return RedirectResponse("/admin/chamados/listar", status_code=status.HTTP_303_SEE_OTHER)
+    # Obter chamado ou retornar 404
+    chamado = obter_ou_404(
+        chamado_repo.obter_por_id(id),
+        request,
+        "Chamado não encontrado",
+        "/admin/chamados/listar"
+    )
+    if isinstance(chamado, RedirectResponse):
+        return chamado
 
     # Marcar mensagens como lidas (apenas as de outros usuários)
     chamado_interacao_repo.marcar_como_lidas(id, usuario_logado["id"])
@@ -78,10 +115,25 @@ async def post_responder(
     """Salva resposta do administrador ao chamado e atualiza status."""
     assert usuario_logado is not None
 
-    chamado = chamado_repo.obter_por_id(id)
-    if not chamado:
-        informar_erro(request, "Chamado não encontrado")
-        return RedirectResponse("/admin/chamados/listar", status_code=status.HTTP_303_SEE_OTHER)
+    # Rate limiting por IP
+    ip = obter_identificador_cliente(request)
+    if not admin_chamado_responder_limiter.verificar(ip):
+        informar_erro(
+            request,
+            "Muitas tentativas de resposta. Aguarde alguns minutos.",
+        )
+        logger.warning(f"Rate limit excedido para admin responder chamado - IP: {ip}")
+        return RedirectResponse(f"/admin/chamados/{id}/responder", status_code=status.HTTP_303_SEE_OTHER)
+
+    # Obter chamado ou retornar 404
+    chamado = obter_ou_404(
+        chamado_repo.obter_por_id(id),
+        request,
+        "Chamado não encontrado",
+        "/admin/chamados/listar"
+    )
+    if isinstance(chamado, RedirectResponse):
+        return chamado
 
     # Obter interações para reexibir em caso de erro
     interacoes = chamado_interacao_repo.obter_por_chamado(id)
@@ -130,7 +182,7 @@ async def post_responder(
             return RedirectResponse(f"/admin/chamados/{id}/responder", status_code=status.HTTP_303_SEE_OTHER)
 
     except ValidationError as e:
-        raise FormValidationError(
+        raise ErroValidacaoFormulario(
             validation_error=e,
             template_path="admin/chamados/responder.html",
             dados_formulario=dados_formulario,
@@ -144,10 +196,15 @@ async def fechar(request: Request, id: int, usuario_logado: Optional[dict] = Non
     """Fecha um chamado alterando apenas o status, sem adicionar mensagem."""
     assert usuario_logado is not None
 
-    chamado = chamado_repo.obter_por_id(id)
-    if not chamado:
-        informar_erro(request, "Chamado não encontrado")
-        return RedirectResponse("/admin/chamados/listar", status_code=status.HTTP_303_SEE_OTHER)
+    # Obter chamado ou retornar 404
+    chamado = obter_ou_404(
+        chamado_repo.obter_por_id(id),
+        request,
+        "Chamado não encontrado",
+        "/admin/chamados/listar"
+    )
+    if isinstance(chamado, RedirectResponse):
+        return chamado
 
     sucesso = chamado_repo.atualizar_status(
         id=id,
@@ -170,10 +227,15 @@ async def reabrir(request: Request, id: int, usuario_logado: Optional[dict] = No
     """Reabre um chamado fechado, alterando status para 'Em Análise'."""
     assert usuario_logado is not None
 
-    chamado = chamado_repo.obter_por_id(id)
-    if not chamado:
-        informar_erro(request, "Chamado não encontrado")
-        return RedirectResponse("/admin/chamados/listar", status_code=status.HTTP_303_SEE_OTHER)
+    # Obter chamado ou retornar 404
+    chamado = obter_ou_404(
+        chamado_repo.obter_por_id(id),
+        request,
+        "Chamado não encontrado",
+        "/admin/chamados/listar"
+    )
+    if isinstance(chamado, RedirectResponse):
+        return chamado
 
     # Verificar se o chamado está fechado
     if chamado.status != StatusChamado.FECHADO:

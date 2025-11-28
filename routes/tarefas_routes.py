@@ -10,7 +10,7 @@ from util.auth_decorator import requer_autenticacao
 from util.template_util import criar_templates
 from util.flash_messages import informar_sucesso, informar_erro
 from util.logger_config import logger
-from util.exceptions import FormValidationError
+from util.exceptions import ErroValidacaoFormulario
 
 router = APIRouter(prefix="/tarefas")
 templates = criar_templates("templates/tarefas")
@@ -66,7 +66,7 @@ async def post_cadastrar(
         return RedirectResponse("/tarefas/listar", status_code=status.HTTP_303_SEE_OTHER)
 
     except ValidationError as e:
-        raise FormValidationError(
+        raise ErroValidacaoFormulario(
             validation_error=e,
             template_path="tarefas/cadastrar.html",
             dados_formulario=dados_formulario,

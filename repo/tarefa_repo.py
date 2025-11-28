@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 from model.tarefa_model import Tarefa
 from sql.tarefa_sql import *
-from util.db_util import get_connection
+from util.db_util import obter_conexao as get_connection
 
 
 def _row_to_tarefa(row) -> Tarefa:

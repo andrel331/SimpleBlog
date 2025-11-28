@@ -1,22 +1,66 @@
+# =============================================================================
+# Imports
+# =============================================================================
+
+# Standard library
 from typing import Optional
+
+# Third-party
 from fastapi import APIRouter, Form, Request, status
 from fastapi.responses import RedirectResponse
 from pydantic import ValidationError
 
+# DTOs
 from dtos.perfil_dto import EditarPerfilDTO, AlterarSenhaDTO
-from repo import usuario_repo, chamado_repo, tarefa_repo
+
+# Repositories
+from repo import usuario_repo, chamado_repo
+
+# Utilities
 from util.auth_decorator import requer_autenticacao
-from util.perfis import Perfil
-from util.template_util import criar_templates
+from util.exceptions import ErroValidacaoFormulario
 from util.flash_messages import informar_sucesso, informar_erro
-from util.security import criar_hash_senha, verificar_senha
 from util.foto_util import salvar_foto_cropada_usuario
 from util.logger_config import logger
-from util.exceptions import FormValidationError
+from util.perfis import Perfil
+from util.rate_limiter import DynamicRateLimiter, obter_identificador_cliente
+from util.repository_helpers import obter_ou_404
+from util.security import criar_hash_senha, verificar_senha
+from util.template_util import criar_templates
 from util.validation_helpers import verificar_email_disponivel
+
+# =============================================================================
+# Configuração do Router
+# =============================================================================
 
 router = APIRouter()
 templates_usuario = criar_templates("templates")
+
+# =============================================================================
+# Rate Limiters
+# =============================================================================
+
+upload_foto_limiter = DynamicRateLimiter(
+    chave_max="rate_limit_upload_foto_max",
+    chave_minutos="rate_limit_upload_foto_minutos",
+    padrao_max=5,
+    padrao_minutos=10,
+    nome="upload_foto",
+)
+alterar_senha_limiter = DynamicRateLimiter(
+    chave_max="rate_limit_alterar_senha_max",
+    chave_minutos="rate_limit_alterar_senha_minutos",
+    padrao_max=5,
+    padrao_minutos=15,
+    nome="alterar_senha",
+)
+form_get_limiter = DynamicRateLimiter(
+    chave_max="rate_limit_form_get_max",
+    chave_minutos="rate_limit_form_get_minutos",
+    padrao_max=60,
+    padrao_minutos=1,
+    nome="form_get",
+)
 
 
 @router.get("/usuario")
@@ -39,9 +83,8 @@ async def dashboard(request: Request, usuario_logado: Optional[dict] = None):
         # Admin vê total de chamados pendentes no sistema
         context["chamados_pendentes"] = chamado_repo.contar_pendentes()
     else:
-        # Usuário comum vê seus próprios chamados em aberto e tarefas pendentes
+        # Usuário comum vê seus próprios chamados em aberto
         context["chamados_abertos"] = chamado_repo.contar_abertos_por_usuario(usuario_logado["id"])
-        context["tarefas_pendentes"] = tarefa_repo.contar_pendentes_por_usuario(usuario_logado["id"])
 
     return templates_usuario.TemplateResponse("dashboard.html", context)
 
@@ -51,11 +94,16 @@ async def dashboard(request: Request, usuario_logado: Optional[dict] = None):
 async def get_visualizar_perfil(request: Request, usuario_logado: Optional[dict] = None):
     """Visualizar perfil do usuário logado"""
     assert usuario_logado is not None
-    usuario = usuario_repo.obter_por_id(usuario_logado["id"])
 
-    if not usuario:
-        informar_erro(request, "Usuário não encontrado!")
-        return RedirectResponse("/logout", status_code=status.HTTP_303_SEE_OTHER)
+    # Obter usuário ou redirecionar para logout
+    usuario = obter_ou_404(
+        usuario_repo.obter_por_id(usuario_logado["id"]),
+        request,
+        "Usuário não encontrado!",
+        "/logout"
+    )
+    if isinstance(usuario, RedirectResponse):
+        return usuario
 
     return templates_usuario.TemplateResponse(
         "perfil/visualizar.html", {"request": request, "usuario": usuario}
@@ -65,13 +113,24 @@ async def get_visualizar_perfil(request: Request, usuario_logado: Optional[dict]
 @router.get("/usuario/perfil/editar")
 @requer_autenticacao()
 async def get_editar_perfil(request: Request, usuario_logado: Optional[dict] = None):
+    # Rate limiting por IP
+    ip = obter_identificador_cliente(request)
+    if not form_get_limiter.verificar(ip):
+        informar_erro(request, f"Muitas requisições. Aguarde {form_get_limiter.janela_minutos} minuto(s).")
+        logger.warning(f"Rate limit excedido para formulário GET - IP: {ip}")
+        return RedirectResponse("/usuario", status_code=status.HTTP_303_SEE_OTHER)
     """Formulário para editar dados do perfil"""
     assert usuario_logado is not None
-    usuario = usuario_repo.obter_por_id(usuario_logado["id"])
 
-    if not usuario:
-        informar_erro(request, "Usuário não encontrado!")
-        return RedirectResponse("/logout", status_code=status.HTTP_303_SEE_OTHER)
+    # Obter usuário ou redirecionar para logout
+    usuario = obter_ou_404(
+        usuario_repo.obter_por_id(usuario_logado["id"]),
+        request,
+        "Usuário não encontrado!",
+        "/logout"
+    )
+    if isinstance(usuario, RedirectResponse):
+        return usuario
 
     return templates_usuario.TemplateResponse(
         "perfil/editar.html", {"request": request, "dados": usuario.__dict__}
@@ -89,12 +148,15 @@ async def post_editar_perfil(
     """Processar edição de dados do perfil"""
     assert usuario_logado is not None
 
-    # Obter usuário atual antes do try para ter acesso no except
-    usuario = usuario_repo.obter_por_id(usuario_logado["id"])
-
-    if not usuario:
-        informar_erro(request, "Usuário não encontrado!")
-        return RedirectResponse("/logout", status_code=status.HTTP_303_SEE_OTHER)
+    # Obter usuário ou redirecionar para logout
+    usuario = obter_ou_404(
+        usuario_repo.obter_por_id(usuario_logado["id"]),
+        request,
+        "Usuário não encontrado!",
+        "/logout"
+    )
+    if isinstance(usuario, RedirectResponse):
+        return usuario
 
     # Armazenar dados do formulário para reexibição em caso de erro
     dados_formulario: dict = {"nome": nome, "email": email}
@@ -149,7 +211,7 @@ async def post_editar_perfil(
     except ValidationError as e:
         # Incluir dados do usuário para o template
         dados_formulario["usuario"] = usuario
-        raise FormValidationError(
+        raise ErroValidacaoFormulario(
             validation_error=e,
             template_path="perfil/editar.html",
             dados_formulario=dados_formulario,
@@ -163,6 +225,13 @@ async def post_editar_perfil(
 @requer_autenticacao()
 async def get_alterar_senha(request: Request, usuario_logado: Optional[dict] = None):
     """Formulário para alterar senha"""
+    # Rate limiting por IP
+    ip = obter_identificador_cliente(request)
+    if not form_get_limiter.verificar(ip):
+        informar_erro(request, f"Muitas requisições. Aguarde {form_get_limiter.janela_minutos} minuto(s).")
+        logger.warning(f"Rate limit excedido para formulário GET - IP: {ip}")
+        return RedirectResponse("/usuario", status_code=status.HTTP_303_SEE_OTHER)
+
     assert usuario_logado is not None
     return templates_usuario.TemplateResponse("perfil/alterar-senha.html", {"request": request})
 
@@ -178,6 +247,25 @@ async def post_alterar_senha(
 ):
     """Processar alteração de senha"""
     assert usuario_logado is not None
+
+    # Rate limiting por IP
+    ip = obter_identificador_cliente(request)
+    if not alterar_senha_limiter.verificar(ip):
+        informar_erro(
+            request,
+            f"Muitas tentativas de alteração de senha. Aguarde {alterar_senha_limiter.janela_minutos} minuto(s).",
+        )
+        logger.warning(f"Rate limit excedido para alteração de senha - IP: {ip}")
+        return templates_usuario.TemplateResponse(
+            "perfil/alterar-senha.html",
+            {
+                "request": request,
+                "erros": {
+                    "geral": f"Muitas tentativas de alteração de senha. Aguarde {alterar_senha_limiter.janela_minutos} minuto(s)."
+                },
+            },
+        )
+
     try:
         # Validar com DTO
         dto = AlterarSenhaDTO(
@@ -186,12 +274,15 @@ async def post_alterar_senha(
             confirmar_senha=confirmar_senha,
         )
 
-        # Obter usuário
-        usuario = usuario_repo.obter_por_id(usuario_logado["id"])
-
-        if not usuario:
-            informar_erro(request, "Usuário não encontrado!")
-            return RedirectResponse("/logout", status_code=status.HTTP_303_SEE_OTHER)
+        # Obter usuário ou redirecionar para logout
+        usuario = obter_ou_404(
+            usuario_repo.obter_por_id(usuario_logado["id"]),
+            request,
+            "Usuário não encontrado!",
+            "/logout"
+        )
+        if isinstance(usuario, RedirectResponse):
+            return usuario
 
         # Validar senha atual
         if not verificar_senha(dto.senha_atual, usuario.senha):
@@ -242,7 +333,7 @@ async def post_alterar_senha(
 
     except ValidationError as e:
         # Não preservar senhas no formulário por segurança
-        raise FormValidationError(
+        raise ErroValidacaoFormulario(
             validation_error=e,
             template_path="perfil/alterar-senha.html",
             dados_formulario={},
@@ -261,6 +352,19 @@ async def post_atualizar_foto(
 ):
     """Upload de foto de perfil cropada"""
     assert usuario_logado is not None
+
+    # Rate limiting por IP
+    ip = obter_identificador_cliente(request)
+    if not upload_foto_limiter.verificar(ip):
+        informar_erro(
+            request,
+            f"Muitas tentativas de upload de foto. Aguarde {upload_foto_limiter.janela_minutos} minuto(s).",
+        )
+        logger.warning(f"Rate limit excedido para upload de foto - IP: {ip}")
+        return RedirectResponse(
+            "/usuario/perfil/visualizar", status_code=status.HTTP_303_SEE_OTHER
+        )
+
     try:
         usuario_id = usuario_logado["id"]
 
