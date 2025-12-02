@@ -78,7 +78,7 @@ async def post_cadastrar(
     titulo: str = Form(""),
     resumo: str = Form(""),
     conteudo: str = Form(""),
-    status_artigo: str = Form("Rascunho"),
+    acao: str = Form("rascunho"),
     categoria_id: int = Form(0),
 ):
     """Processa o cadastro de um novo artigo."""
@@ -95,6 +95,9 @@ async def post_cadastrar(
         )
 
     categorias = categoria_repo.obter_todos()
+
+    # Define status baseado na ação do botão
+    status_artigo = "Finalizado" if acao == "finalizar" else "Rascunho"
 
     try:
         dto = CriarArtigoDTO(
@@ -205,7 +208,7 @@ async def post_editar(
     titulo: str = Form(""),
     resumo: str = Form(""),
     conteudo: str = Form(""),
-    status_artigo: str = Form("Rascunho"),
+    acao: str = Form("salvar"),
     categoria_id: int = Form(0),
 ):
     """Processa a edição de um artigo."""
@@ -238,6 +241,14 @@ async def post_editar(
         )
 
     categorias = categoria_repo.obter_todos()
+
+    # Define status baseado na ação e status atual
+    if artigo_atual.status == "Publicado":
+        status_artigo = "Publicado"  # Manter status de publicado
+    elif acao == "finalizar":
+        status_artigo = "Finalizado"
+    else:
+        status_artigo = "Rascunho"
 
     try:
         dto = AlterarArtigoDTO(

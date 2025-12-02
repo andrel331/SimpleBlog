@@ -83,22 +83,6 @@
                             </small>
                         </div>
 
-                        <div class="col-md-6">
-                            {% set status_atual = dados_formulario.status_artigo if dados_formulario else artigo.status %}
-                            {{ field(
-                                name='status_artigo',
-                                label='Status',
-                                type='select',
-                                value=status_atual,
-                                options={
-                                    'Rascunho': 'Rascunho - Salvar para continuar depois',
-                                    'Finalizado': 'Finalizado - Pronto para revisão',
-                                    'Publicado': 'Publicado - Visível para todos',
-                                    'Pausado': 'Pausado - Temporariamente indisponível'
-                                }
-                            ) }}
-                        </div>
-
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Informações</label>
                             <div class="small text-muted">
@@ -113,15 +97,19 @@
                 </div>
                 <div class="card-footer p-4">
                     <div class="d-flex gap-3">
-                        <button type="submit" class="btn btn-primary">
+                        {% if artigo.status == 'Publicado' %}
+                        <button type="submit" name="acao" value="salvar" class="btn btn-primary">
                             <i class="bi bi-check-circle"></i> Salvar Alterações
                         </button>
-                        {% if artigo.status != 'Publicado' %}
-                        <button type="button" class="btn btn-success" onclick="publicarArtigo()">
-                            <i class="bi bi-send"></i> Publicar
+                        {% else %}
+                        <button type="submit" name="acao" value="rascunho" class="btn btn-secondary">
+                            <i class="bi bi-file-earmark"></i> Salvar Rascunho
+                        </button>
+                        <button type="submit" name="acao" value="finalizar" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Concluir Artigo
                         </button>
                         {% endif %}
-                        <a href="/artigos/meus" class="btn btn-secondary">
+                        <a href="/artigos/meus" class="btn btn-outline-secondary">
                             <i class="bi bi-x-circle"></i> Cancelar
                         </a>
                     </div>
@@ -172,12 +160,5 @@
         });
     });
 
-    function publicarArtigo() {
-        abrirModalConfirmacao({
-            url: '/artigos/publicar/{{ artigo.id }}',
-            mensagem: 'Deseja publicar este artigo?',
-            detalhes: '<p class="text-info"><i class="bi bi-info-circle"></i> O artigo ficará visível para todos os usuários autenticados.</p>'
-        });
-    }
 </script>
 {% endblock %}

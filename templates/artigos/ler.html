@@ -95,9 +95,7 @@
         <!-- Conteúdo do Artigo -->
         <div class="card shadow-sm">
             <div class="card-body p-4 p-md-5">
-                <div class="artigo-conteudo" id="conteudo-artigo">
-                    {{ artigo.conteudo }}
-                </div>
+                <div class="artigo-conteudo" id="conteudo-artigo">{{ artigo.conteudo }}</div>
             </div>
         </div>
 
@@ -144,7 +142,7 @@
             breaks: true,
             gfm: true,
             highlight: function(code, lang) {
-                if (lang && hljs.getLanguage(lang)) {
+                if (typeof hljs !== 'undefined' && lang && hljs.getLanguage(lang)) {
                     return hljs.highlight(code, { language: lang }).value;
                 }
                 return code;
@@ -155,9 +153,11 @@
         conteudoEl.innerHTML = marked.parse(conteudoOriginal);
 
         // Aplica highlight em blocos de código sem linguagem especificada
-        document.querySelectorAll('pre code:not([class*="hljs"])').forEach((block) => {
-            hljs.highlightElement(block);
-        });
+        if (typeof hljs !== 'undefined') {
+            document.querySelectorAll('pre code:not([class*="hljs"])').forEach((block) => {
+                hljs.highlightElement(block);
+            });
+        }
     });
 </script>
 {% endblock %}

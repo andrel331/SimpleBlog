@@ -79,26 +79,17 @@
                             </small>
                         </div>
 
-                        <div class="col-md-6">
-                            {{ field(
-                                name='status_artigo',
-                                label='Status',
-                                type='select',
-                                options={
-                                    'Rascunho': 'Rascunho - Salvar para continuar depois',
-                                    'Finalizado': 'Finalizado - Pronto para revisão',
-                                    'Publicado': 'Publicado - Visível para todos'
-                                }
-                            ) }}
-                        </div>
                     </div>
                 </div>
                 <div class="card-footer p-4">
                     <div class="d-flex gap-3">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-circle"></i> Salvar Artigo
+                        <button type="submit" name="acao" value="rascunho" class="btn btn-secondary">
+                            <i class="bi bi-file-earmark"></i> Salvar Rascunho
                         </button>
-                        <a href="/artigos/meus" class="btn btn-secondary">
+                        <button type="submit" name="acao" value="finalizar" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Concluir Artigo
+                        </button>
+                        <a href="/artigos/meus" class="btn btn-outline-secondary">
                             <i class="bi bi-x-circle"></i> Cancelar
                         </a>
                     </div>

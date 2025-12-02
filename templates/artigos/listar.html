@@ -119,7 +119,11 @@
         abrirModalConfirmacao({
             url: `/artigos/publicar/${artigoId}`,
             mensagem: `Deseja publicar o artigo "${artigoTitulo}"?`,
-            detalhes: '<p class="text-info"><i class="bi bi-info-circle"></i> O artigo ficará visível para todos os usuários autenticados.</p>'
+            detalhes: '<p class="text-info"><i class="bi bi-info-circle"></i> O artigo ficará visível para todos os usuários autenticados.</p>',
+            tipo: 'warning',
+            titulo: 'Confirmar Publicação',
+            btnTexto: 'Publicar',
+            btnIcone: 'bi-send'
         });
     }
 </script>
