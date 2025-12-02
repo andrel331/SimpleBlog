@@ -18,7 +18,7 @@ from model.usuario_logado_model import UsuarioLogado
 from model.usuario_logado_model import UsuarioLogado
 
 # Repositories
-from repo import usuario_repo, chamado_repo
+from repo import usuario_repo, chamado_repo, artigo_repo
 
 # Utilities
 from util.auth_decorator import requer_autenticacao
@@ -88,6 +88,11 @@ async def dashboard(request: Request, usuario_logado: Optional[UsuarioLogado] = 
     else:
         # Usuário comum vê seus próprios chamados em aberto
         context["chamados_abertos"] = chamado_repo.contar_abertos_por_usuario(usuario_logado.id)
+
+    # Adicionar contador de artigos para autores
+    if usuario_logado.perfil == "Autor":
+        artigos = artigo_repo.obter_por_usuario(usuario_logado.id)
+        context["total_artigos"] = len(artigos) if artigos else 0
 
     return templates_usuario.TemplateResponse("dashboard.html", context)
 
