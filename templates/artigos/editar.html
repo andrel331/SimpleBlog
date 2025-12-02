@@ -77,7 +77,7 @@
 
                         <div class="col-12 mb-3">
                             <label for="conteudo" class="form-label">Conteúdo <span class="text-danger">*</span></label>
-                            <textarea name="conteudo" id="conteudo" required>{{ dados_formulario.conteudo if dados_formulario else artigo.conteudo }}</textarea>
+                            <textarea name="conteudo" id="conteudo">{{ dados_formulario.conteudo if dados_formulario else artigo.conteudo }}</textarea>
                             <small class="form-text text-muted">
                                 Use Markdown para formatar seu texto. Mínimo de 50 caracteres.
                             </small>
@@ -160,7 +160,15 @@
         // Sincroniza o conteúdo do EasyMDE com o textarea antes do submit
         document.getElementById('formArtigo').addEventListener('submit', function(e) {
             const textarea = document.getElementById('conteudo');
-            textarea.value = easyMDE.value();
+            const content = easyMDE.value();
+            textarea.value = content;
+
+            // Validação: conteúdo mínimo de 50 caracteres
+            if (content.trim().length < 50) {
+                e.preventDefault();
+                alert('O conteúdo deve ter no mínimo 50 caracteres.');
+                return false;
+            }
         });
     });
 
