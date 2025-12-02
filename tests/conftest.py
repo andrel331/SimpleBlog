@@ -116,9 +116,6 @@ def limpar_banco_dados():
             tabelas_existentes = [row[0] for row in cursor.fetchall()]
 
             # Limpar apenas tabelas que existem (respeitando foreign keys)
-            # Tarefas tem FK para usuario, então limpar primeiro
-            if "tarefa" in tabelas_existentes:
-                cursor.execute("DELETE FROM tarefa")
             # Limpar chamado_interacao antes de chamado (devido à FK)
             if "chamado_interacao" in tabelas_existentes:
                 cursor.execute("DELETE FROM chamado_interacao")
