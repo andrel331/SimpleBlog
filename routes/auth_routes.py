@@ -20,12 +20,12 @@ from model.usuario_model import Usuario
 from repo import usuario_repo
 
 # Utilities
+from util.auth_decorator import criar_sessao
 from util.datetime_util import agora
 from util.email_service import servico_email
 from util.exceptions import ErroValidacaoFormulario
 from util.flash_messages import informar_sucesso, informar_erro
 from util.logger_config import logger
-from util.perfis import Perfil
 from util.rate_limiter import DynamicRateLimiter, obter_identificador_cliente
 from util.security import (
     criar_hash_senha,
@@ -35,6 +35,7 @@ from util.security import (
 )
 from util.template_util import criar_templates
 from util.validation_helpers import verificar_email_disponivel
+from model.usuario_logado_model import UsuarioLogado
 
 # =============================================================================
 # Configuração do Router
@@ -139,12 +140,8 @@ async def post_login(
             )
 
         # Salvar sessão
-        request.session["usuario_logado"] = {
-            "id": usuario.id,
-            "nome": usuario.nome,
-            "email": usuario.email,
-            "perfil": usuario.perfil,
-        }
+        usuario_logado = UsuarioLogado.from_usuario(usuario)
+        criar_sessao(request, usuario_logado)
 
         logger.info(f"Usuário {usuario.email} autenticado com sucesso")
         informar_sucesso(request, f"Bem-vindo(a), {usuario.nome}!")
@@ -344,7 +341,7 @@ async def get_redefinir_senha(request: Request, token: str):
             return RedirectResponse(
                 "/esqueci-senha", status_code=status.HTTP_303_SEE_OTHER
             )
-    except:
+    except Exception:
         informar_erro(request, "Token inválido")
         return RedirectResponse("/esqueci-senha", status_code=status.HTTP_303_SEE_OTHER)
 
@@ -386,7 +383,7 @@ async def post_redefinir_senha(
                 return RedirectResponse(
                     "/esqueci-senha", status_code=status.HTTP_303_SEE_OTHER
                 )
-        except:
+        except Exception:
             informar_erro(request, "Token inválido")
             return RedirectResponse(
                 "/esqueci-senha", status_code=status.HTTP_303_SEE_OTHER

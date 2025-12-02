@@ -3,21 +3,24 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 
+
 class StatusArtigo(Enum):
     RASCUNHO = "Rascunho"
     FINALIZADO = "Finalizado"
     PUBLICADO = "Publicado"
     PAUSADO = "Pausado"
 
+
 @dataclass
 class Artigo:
     id: int
     titulo: str
     conteudo: str
-    status: StatusArtigo
+    status: str
     usuario_id: int
     categoria_id: int
-    qtde_visualizacoes: Optional[int] = None
+    resumo: Optional[str] = None
+    qtde_visualizacoes: Optional[int] = 0
     data_cadastro: Optional[datetime] = None
     data_atualizacao: Optional[datetime] = None
     data_publicacao: Optional[datetime] = None

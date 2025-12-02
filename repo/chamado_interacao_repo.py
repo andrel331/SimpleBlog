@@ -1,11 +1,3 @@
-"""
-Repositório para operações de banco de dados relacionadas a interações de chamados.
-
-Implementa a camada de acesso a dados (DAL) para a entidade ChamadoInteracao,
-seguindo o padrão de Repository com funções CRUD.
-"""
-
-from datetime import datetime
 from typing import Optional
 from model.chamado_interacao_model import ChamadoInteracao, TipoInteracao
 from sql.chamado_interacao_sql import *
@@ -182,8 +174,6 @@ def obter_contador_nao_lidas(usuario_id: int) -> dict[int, int]:
 
     Returns:
         Dict {chamado_id: quantidade_nao_lidas}
-        Exemplo: {1: 3, 5: 1, 7: 2} significa que o chamado 1 tem 3 mensagens
-        não lidas de outros usuários, o chamado 5 tem 1, e o chamado 7 tem 2.
     """
     with obter_conexao() as conn:
         cursor = conn.cursor()

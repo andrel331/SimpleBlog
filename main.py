@@ -3,7 +3,7 @@
 # ------------------------------------------------------------
 
 import uvicorn
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware.sessions import SessionMiddleware
@@ -30,9 +30,9 @@ from util.seed_data import inicializar_dados
 # ------------------------------------------------------------
 from repo import (
     categoria_repo,
+    artigo_repo,
     usuario_repo,
     configuracao_repo,
-    tarefa_repo,
     chamado_repo,
     chamado_interacao_repo,
     indices_repo,
@@ -45,7 +45,6 @@ from repo import (
 # Rotas
 # ------------------------------------------------------------
 from routes.auth_routes import router as auth_router
-from routes.tarefas_routes import router as tarefas_router
 from routes.chamados_routes import router as chamados_router
 from routes.admin_usuarios_routes import router as admin_usuarios_router
 from routes.admin_configuracoes_routes import router as admin_config_router
@@ -56,6 +55,7 @@ from routes.chat_routes import router as chat_router
 from routes.public_routes import router as public_router
 from routes.examples_routes import router as examples_router
 from routes.admin_categorias_routes import router as admin_categorias_router
+from routes.artigos_routes import router as artigos_router
 
 
 # ------------------------------------------------------------
@@ -63,22 +63,22 @@ from routes.admin_categorias_routes import router as admin_categorias_router
 # ------------------------------------------------------------
 def create_app() -> FastAPI:
     """Cria e configura a instância principal da aplicação."""
-    app = FastAPI(title=APP_NAME, version=VERSION)
+    application = FastAPI(title=APP_NAME, version=VERSION)
 
     # ------------------------------------------------------------
     # Middlewares
     # ------------------------------------------------------------
-    app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
-    app.add_middleware(MiddlewareProtecaoCSRF)
+    application.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+    application.add_middleware(MiddlewareProtecaoCSRF)
     logger.info("✅ Middlewares registrados com sucesso")
 
     # ------------------------------------------------------------
     # Handlers de exceção
     # ------------------------------------------------------------
-    app.add_exception_handler(StarletteHTTPException, http_exception_handler)
-    app.add_exception_handler(RequestValidationError, validation_exception_handler)
-    app.add_exception_handler(ErroValidacaoFormulario, form_validation_exception_handler)
-    app.add_exception_handler(Exception, generic_exception_handler)
+    application.add_exception_handler(StarletteHTTPException, http_exception_handler)
+    application.add_exception_handler(RequestValidationError, validation_exception_handler)
+    application.add_exception_handler(ErroValidacaoFormulario, form_validation_exception_handler)
+    application.add_exception_handler(Exception, generic_exception_handler)
     logger.info("✅ Exception handlers configurados")
 
     # ------------------------------------------------------------
@@ -86,7 +86,7 @@ def create_app() -> FastAPI:
     # ------------------------------------------------------------
     static_path = Path("static")
     if static_path.exists():
-        app.mount("/static", StaticFiles(directory="static"), name="static")
+        application.mount("/static", StaticFiles(directory="static"), name="static")
         logger.info("📂 Arquivos estáticos montados em /static")
     else:
         logger.warning(
@@ -100,7 +100,6 @@ def create_app() -> FastAPI:
         logger.info("🛠️ Criando/verificando tabelas do banco de dados...")
         usuario_repo.criar_tabela()
         configuracao_repo.criar_tabela()
-        tarefa_repo.criar_tabela()
         chamado_repo.criar_tabela()
         chamado_interacao_repo.criar_tabela()
         chat_sala_repo.criar_tabela()
@@ -108,6 +107,7 @@ def create_app() -> FastAPI:
         chat_mensagem_repo.criar_tabela()
         indices_repo.criar_indices()
         categoria_repo.criar_tabela()
+        artigo_repo.criar_tabela()
         logger.info("✅ Tabelas e índices criados/verificados com sucesso")
 
         inicializar_dados()
@@ -121,7 +121,6 @@ def create_app() -> FastAPI:
     # ------------------------------------------------------------
     routers = [
         auth_router,
-        tarefas_router,
         chamados_router,
         admin_usuarios_router,
         admin_config_router,
@@ -132,9 +131,10 @@ def create_app() -> FastAPI:
         public_router,
         examples_router,
         admin_categorias_router,
+        artigos_router,
     ]
     for r in routers:
-        app.include_router(r)
+        application.include_router(r)
         logger.info(
             f"🔗 Router incluído: {r.prefix if hasattr(r, 'prefix') else 'sem prefixo'}"
         )
@@ -142,12 +142,12 @@ def create_app() -> FastAPI:
     # ------------------------------------------------------------
     # Health Check
     # ------------------------------------------------------------
-    @app.get("/health")
+    @application.get("/health")
     async def health_check():
         return {"status": "healthy"}
 
     logger.info(f"🚀 {APP_NAME} inicializado com sucesso (v{VERSION})")
-    return app
+    return application
 
 
 # ------------------------------------------------------------

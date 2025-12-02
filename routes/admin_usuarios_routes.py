@@ -12,9 +12,11 @@ from pydantic import ValidationError
 
 # DTOs
 from dtos.usuario_dto import CriarUsuarioDTO, AlterarUsuarioDTO
+from model.usuario_logado_model import UsuarioLogado
 
 # Models
 from model.usuario_model import Usuario
+from model.usuario_logado_model import UsuarioLogado
 
 # Repositories
 from repo import usuario_repo
@@ -50,31 +52,38 @@ admin_usuarios_limiter = DynamicRateLimiter(
     nome="admin_usuarios",
 )
 
+
 @router.get("/")
 @requer_autenticacao([Perfil.ADMIN.value])
-async def index(request: Request, usuario_logado: Optional[dict] = None):
+async def index(request: Request, usuario_logado: Optional[UsuarioLogado] = None):
     """Redireciona para lista de usuários"""
+    assert usuario_logado is not None
     return RedirectResponse("/admin/usuarios/listar", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+
 
 @router.get("/listar")
 @requer_autenticacao([Perfil.ADMIN.value])
-async def listar(request: Request, usuario_logado: Optional[dict] = None):
+async def listar(request: Request, usuario_logado: Optional[UsuarioLogado] = None):
     """Lista todos os usuários do sistema"""
+    assert usuario_logado is not None
     usuarios = usuario_repo.obter_todos()
     return templates.TemplateResponse(
         "admin/usuarios/listar.html",
         {"request": request, "usuarios": usuarios}
     )
 
+
 @router.get("/cadastrar")
 @requer_autenticacao([Perfil.ADMIN.value])
-async def get_cadastrar(request: Request, usuario_logado: Optional[dict] = None):
+async def get_cadastrar(request: Request, usuario_logado: Optional[UsuarioLogado] = None):
     """Exibe formulário de cadastro de usuário"""
+    assert usuario_logado is not None
     perfis = Perfil.valores()
     return templates.TemplateResponse(
         "admin/usuarios/cadastro.html",
         {"request": request, "perfis": perfis}
     )
+
 
 @router.post("/cadastrar")
 @requer_autenticacao([Perfil.ADMIN.value])
@@ -84,7 +93,7 @@ async def post_cadastrar(
     email: str = Form(...),
     senha: str = Form(...),
     perfil: str = Form(...),
-    usuario_logado: Optional[dict] = None
+    usuario_logado: Optional[UsuarioLogado] = None
 ):
     """Cadastra um novo usuário"""
     assert usuario_logado is not None
@@ -134,7 +143,7 @@ async def post_cadastrar(
         )
 
         usuario_repo.inserir(usuario)
-        logger.info(f"Usuário '{dto.email}' cadastrado por admin {usuario_logado['id']}")
+        logger.info(f"Usuário '{dto.email}' cadastrado por admin {usuario_logado.id}")
 
         informar_sucesso(request, "Usuário cadastrado com sucesso!")
         return RedirectResponse("/admin/usuarios/listar", status_code=status.HTTP_303_SEE_OTHER)
@@ -149,10 +158,12 @@ async def post_cadastrar(
             campo_padrao="senha",
         )
 
+
 @router.get("/editar/{id}")
 @requer_autenticacao([Perfil.ADMIN.value])
-async def get_editar(request: Request, id: int, usuario_logado: Optional[dict] = None):
+async def get_editar(request: Request, id: int, usuario_logado: Optional[UsuarioLogado] = None):
     """Exibe formulário de alteração de usuário"""
+    assert usuario_logado is not None
     # Obter usuário ou retornar 404
     usuario = obter_ou_404(
         usuario_repo.obter_por_id(id),
@@ -178,6 +189,7 @@ async def get_editar(request: Request, id: int, usuario_logado: Optional[dict] =
         }
     )
 
+
 @router.post("/editar/{id}")
 @requer_autenticacao([Perfil.ADMIN.value])
 async def post_editar(
@@ -186,7 +198,7 @@ async def post_editar(
     nome: str = Form(...),
     email: str = Form(...),
     perfil: str = Form(...),
-    usuario_logado: Optional[dict] = None
+    usuario_logado: Optional[UsuarioLogado] = None
 ):
     """Altera dados de um usuário"""
     assert usuario_logado is not None
@@ -244,7 +256,7 @@ async def post_editar(
         )
 
         usuario_repo.alterar(usuario_atualizado)
-        logger.info(f"Usuário {id} alterado por admin {usuario_logado['id']}")
+        logger.info(f"Usuário {id} alterado por admin {usuario_logado.id}")
 
         informar_sucesso(request, "Usuário alterado com sucesso!")
         return RedirectResponse("/admin/usuarios/listar", status_code=status.HTTP_303_SEE_OTHER)
@@ -260,9 +272,10 @@ async def post_editar(
             campo_padrao="email",
         )
 
+
 @router.post("/excluir/{id}")
 @requer_autenticacao([Perfil.ADMIN.value])
-async def post_excluir(request: Request, id: int, usuario_logado: Optional[dict] = None):
+async def post_excluir(request: Request, id: int, usuario_logado: Optional[UsuarioLogado] = None):
     """Exclui um usuário"""
     assert usuario_logado is not None
 
@@ -283,12 +296,12 @@ async def post_excluir(request: Request, id: int, usuario_logado: Optional[dict]
         return usuario
 
     # Impedir exclusão do próprio usuário
-    if usuario.id == usuario_logado["id"]:
+    if usuario.id == usuario_logado.id:
         informar_erro(request, "Você não pode excluir seu próprio usuário")
-        logger.warning(f"Admin {usuario_logado['id']} tentou excluir a si mesmo")
+        logger.warning(f"Admin {usuario_logado.id} tentou excluir a si mesmo")
         return RedirectResponse("/admin/usuarios/listar", status_code=status.HTTP_303_SEE_OTHER)
 
     usuario_repo.excluir(id)
-    logger.info(f"Usuário {id} ({usuario.email}) excluído por admin {usuario_logado['id']}")
+    logger.info(f"Usuário {id} ({usuario.email}) excluído por admin {usuario_logado.id}")
     informar_sucesso(request, "Usuário excluído com sucesso!")
     return RedirectResponse("/admin/usuarios/listar", status_code=status.HTTP_303_SEE_OTHER)

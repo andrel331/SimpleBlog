@@ -911,25 +911,21 @@ DefaultWebApp/
 │
 ├── dtos/                    # DTOs Pydantic para validação
 │   ├── validators.py       # ⭐ 15+ validadores reutilizáveis
-│   ├── tarefa_dto.py
 │   ├── usuario_dto.py
 │   └── login_dto.py
 │
 ├── model/                   # Modelos de entidades (dataclasses)
 │   ├── usuario_model.py
-│   ├── tarefa_model.py
 │   └── configuracao_model.py
 │
 ├── repo/                    # Repositórios de acesso a dados
 │   ├── usuario_repo.py
-│   ├── tarefa_repo.py
 │   └── configuracao_repo.py
 │
 ├── routes/                  # Rotas organizadas por módulo
 │   ├── auth_routes.py
 │   ├── perfil_routes.py
 │   ├── usuario_routes.py
-│   ├── tarefas_routes.py
 │   ├── admin_usuarios_routes.py
 │   ├── admin_configuracoes_routes.py
 │   ├── public_routes.py
@@ -937,7 +933,6 @@ DefaultWebApp/
 │
 ├── sql/                     # Comandos SQL
 │   ├── usuario_sql.py
-│   ├── tarefa_sql.py
 │   └── configuracao_sql.py
 │
 ├── static/                  # Arquivos estáticos
@@ -959,7 +954,6 @@ DefaultWebApp/
 │   ├── base_privada.html   # Base para páginas autenticadas
 │   ├── auth/               # Login, cadastro, recuperação
 │   ├── perfil/             # Perfil do usuário
-│   ├── tarefas/            # Exemplo CRUD
 │   ├── admin/              # Área administrativa
 │   │   ├── usuarios/
 │   │   └── configuracoes/

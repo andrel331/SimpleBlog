@@ -1,6 +1,6 @@
 # Update from Forked Repository
 
-Atualiza este repositório fork com as últimas mudanças do repositório original upstream, corrigindo automaticamente problemas comuns nos testes.
+Atualiza este projeto forkado com as últimas mudanças do repositório original upstream, corrigindo automaticamente problemas que normalmente ocorrem durante a atualização, principalmente durante a execução de testes.
 
 ## ⚠️ GARANTIA DE SEGURANÇA
 
@@ -203,7 +203,7 @@ def limpar_banco_dados():
         cursor = conn.cursor()
         # Tentar limpar cada tabela, ignorando se não existir
         try:
-            cursor.execute("DELETE FROM tarefa")
+            cursor.execute("DELETE FROM chamado")
         except sqlite3.OperationalError:
             pass
         try:

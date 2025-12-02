@@ -6,6 +6,7 @@ from pydantic import ValidationError
 
 # DTOs e modelo
 from dtos.categoria_dto import CriarCategoriaDTO, AlterarCategoriaDTO
+from model.usuario_logado_model import UsuarioLogado
 from model.categoria_model import Categoria
 
 # Repositório
@@ -40,11 +41,12 @@ admin_categorias_limiter = RateLimiter(
 @requer_autenticacao([Perfil.ADMIN.value])
 async def index(
     request: Request,
-    usuario_logado: Optional[dict] = None,
+    usuario_logado: Optional[UsuarioLogado] = None,
 ):
     """
     Redireciona a raiz para /listar
     """
+    assert usuario_logado is not None
     return RedirectResponse(
         url="/admin/categorias/listar",
         status_code=status.HTTP_303_SEE_OTHER,
@@ -55,12 +57,13 @@ async def index(
 @requer_autenticacao([Perfil.ADMIN.value])
 async def listar(
     request: Request,
-    usuario_logado: Optional[dict] = None,
+    usuario_logado: Optional[UsuarioLogado] = None,
 ):
     """
     Lista todas as categorias.
     Acessível em: GET /admin/categorias/listar
     """
+    assert usuario_logado is not None
     categorias = categoria_repo.obter_todos()
 
     return templates.TemplateResponse(
@@ -77,12 +80,13 @@ async def listar(
 @requer_autenticacao([Perfil.ADMIN.value])
 async def get_cadastrar(
     request: Request,
-    usuario_logado: Optional[dict] = None,
+    usuario_logado: Optional[UsuarioLogado] = None,
 ):
     """
     Exibe o formulário de cadastro.
     Acessível em: GET /admin/categorias/cadastrar
     """
+    assert usuario_logado is not None
     return templates.TemplateResponse(
         "admin/categorias/cadastro.html",
         {"request": request, "usuario_logado": usuario_logado},
@@ -93,7 +97,7 @@ async def get_cadastrar(
 @requer_autenticacao([Perfil.ADMIN.value])
 async def post_cadastrar(
     request: Request,
-    usuario_logado: Optional[dict] = None,
+    usuario_logado: Optional[UsuarioLogado] = None,
     nome: str = Form(""),
     descricao: str = Form(""),
 ):
@@ -101,6 +105,7 @@ async def post_cadastrar(
     Processa o cadastro de uma nova categoria.
     Acessível em: POST /admin/categorias/cadastrar
     """
+    assert usuario_logado is not None
     # Rate limiting
     ip = obter_identificador_cliente(request)
     if not admin_categorias_limiter.verificar(ip):
@@ -156,12 +161,13 @@ async def post_cadastrar(
 async def get_editar(
     request: Request,
     id: int,
-    usuario_logado: Optional[dict] = None,
+    usuario_logado: Optional[UsuarioLogado] = None,
 ):
     """
     Exibe o formulário de edição de uma categoria.
     Acessível em: GET /admin/categorias/editar/<id>
     """
+    assert usuario_logado is not None
     categoria = categoria_repo.obter_por_id(id)
 
     if not categoria:
@@ -186,7 +192,7 @@ async def get_editar(
 async def post_editar(
     request: Request,
     id: int,
-    usuario_logado: Optional[dict] = None,
+    usuario_logado: Optional[UsuarioLogado] = None,
     nome: str = Form(""),
     descricao: str = Form(""),
 ):
@@ -194,6 +200,7 @@ async def post_editar(
     Processa a edição de uma categoria.
     Acessível em: POST /admin/categorias/editar/<id>
     """
+    assert usuario_logado is not None
     # Rate limiting
     ip = obter_identificador_cliente(request)
     if not admin_categorias_limiter.verificar(ip):
@@ -266,12 +273,13 @@ async def post_editar(
 async def post_excluir(
     request: Request,
     id: int,
-    usuario_logado: Optional[dict] = None,
+    usuario_logado: Optional[UsuarioLogado] = None,
 ):
     """
     Exclui uma categoria.
     Acessível em: POST /admin/categorias/excluir/<id>
     """
+    assert usuario_logado is not None
     # Rate limiting
     ip = obter_identificador_cliente(request)
     if not admin_categorias_limiter.verificar(ip):
