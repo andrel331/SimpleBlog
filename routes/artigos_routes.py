@@ -149,6 +149,8 @@ async def post_cadastrar(
                 "conteudo": conteudo,
                 "status_artigo": status_artigo,
                 "categoria_id": categoria_id,
+                "categorias": categorias,
+                "status_artigo_enum": StatusArtigo,
             },
             campo_padrao="titulo"
         )
@@ -286,6 +288,9 @@ async def post_editar(
                 "status_artigo": status_artigo,
                 "categoria_id": categoria_id,
                 "id": id,
+                "artigo": artigo_atual,
+                "categorias": categorias,
+                "status_artigo_enum": StatusArtigo,
             },
             campo_padrao="titulo"
         )

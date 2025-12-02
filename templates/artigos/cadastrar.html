@@ -133,6 +133,12 @@
             status: ['autosave', 'lines', 'words'],
             minHeight: '300px',
         });
+
+        // Sincroniza o conteúdo do EasyMDE com o textarea antes do submit
+        document.getElementById('formArtigo').addEventListener('submit', function(e) {
+            const textarea = document.getElementById('conteudo');
+            textarea.value = easyMDE.value();
+        });
     });
 </script>
 {% endblock %}
